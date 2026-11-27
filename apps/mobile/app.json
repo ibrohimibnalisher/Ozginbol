@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Ozginbol",
+    "slug": "ozginbol",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": false, "bundleIdentifier": "uz.ozginbol.app" },
+    "android": { "package": "uz.ozginbol.app", "edgeToEdgeEnabled": true },
+    "web": { "bundler": "metro", "output": "single" }
+  }
+}

@@ -11,8 +11,8 @@
   "dependencies": {
     "@ozginbol/core": "*",
     "next": "15.5.29",
-    "react": "19.1.10",
-    "react-dom": "19.1.10"
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

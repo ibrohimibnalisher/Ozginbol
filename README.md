@@ -8,14 +8,14 @@ Kaloriya hisoblash va sog'lom turmush uchun ilova, Telegram bot va website. O'zb
 packages/core   Umumiy yadro: taomlar bazasi, matnni tahlil qilish, maqsad va makro hisoblash, mashqlar
 apps/web        Website (Next.js): kaloriya kalkulyatori, kunlik me'yor, taomlar bazasi, /api/parse
 apps/bot        Telegram bot (grammY + SQLite): kundalik, hisobotlar, suv, vazn, mashg'ulot, eslatmalar
-apps/mobile     (keyingi bosqich) Mobil ilova (Expo)
+apps/mobile     Mobil ilova (Expo SDK 54, iOS va Android): kundalik, hisobot, mashg'ulot, profil
 ```
 
 ## Ishga tushirish
 
 ```bash
 npm install
-npm test          # yadro testlari
+npm test          # barcha testlar
 npm run dev:web   # http://localhost:3000
 ```
 
@@ -26,6 +26,15 @@ npm run dev:web   # http://localhost:3000
 3. `cd apps/bot && node --env-file=.env --import tsx src/index.ts` (yoki `BOT_TOKEN=... npm run dev:bot`).
 
 Bot buyruqlari: /bugun, /hafta, /ochir, /suv, /mashq, /vazn, /maqsad, /mashqlar, /taom, /eslatma. Oddiy matn yozilsa ("2 ta somsa va choy") kundalikka qo'shiladi, "30 daqiqa yugurdim" mashg'ulot sifatida yoziladi. Eslatmalar Toshkent vaqti bilan 13:00 va 20:30 da.
+
+### Mobil ilova
+
+```bash
+cd apps/mobile
+npx expo start    # telefonda Expo Go ilovasi bilan QR kodni skanerlang
+```
+
+Ilova oflayn ishlaydi, ma'lumotlar telefonda saqlanadi. Ekranlar: Bugun (kaloriya halqasi, makrolar, nonushta/tushlik/kechki/gazak, suv), qo'shish (matn yozish, darrov hisob, tez qo'shish), Hisobot (7 kun, vazn grafigi), Mashq (mashg'ulot yozish va reja), Profil.
 
 ## API
 
