@@ -7,7 +7,7 @@ Kaloriya hisoblash va sog'lom turmush uchun ilova, Telegram bot va website. O'zb
 ```
 packages/core   Umumiy yadro: taomlar bazasi, matnni tahlil qilish, maqsad va makro hisoblash, mashqlar
 apps/web        Website (Next.js): kaloriya kalkulyatori, kunlik me'yor, taomlar bazasi, /api/parse
-apps/bot        (keyingi bosqich) Telegram bot
+apps/bot        Telegram bot (grammY + SQLite): kundalik, hisobotlar, suv, vazn, mashg'ulot, eslatmalar
 apps/mobile     (keyingi bosqich) Mobil ilova (Expo)
 ```
 
@@ -18,6 +18,14 @@ npm install
 npm test          # yadro testlari
 npm run dev:web   # http://localhost:3000
 ```
+
+### Telegram bot
+
+1. @BotFather orqali bot yarating va tokenni oling.
+2. `apps/bot/.env.example` dan nusxa olib `apps/bot/.env` yarating, `BOT_TOKEN` ni yozing.
+3. `cd apps/bot && node --env-file=.env --import tsx src/index.ts` (yoki `BOT_TOKEN=... npm run dev:bot`).
+
+Bot buyruqlari: /bugun, /hafta, /ochir, /suv, /mashq, /vazn, /maqsad, /mashqlar, /taom, /eslatma. Oddiy matn yozilsa ("2 ta somsa va choy") kundalikka qo'shiladi, "30 daqiqa yugurdim" mashg'ulot sifatida yoziladi. Eslatmalar Toshkent vaqti bilan 13:00 va 20:30 da.
 
 ## API
 

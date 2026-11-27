@@ -39,3 +39,36 @@ export function minutesToBurn(exerciseId: string, weightKg: number, kcal: number
   if (!ex) throw new Error(`Unknown exercise: ${exerciseId}`);
   return Math.round((kcal / (ex.met * weightKg)) * 60);
 }
+
+const EXERCISE_WORDS: [RegExp, string][] = [
+  [/tez yur|brisk|быстр/, "walk_fast"],
+  [/yugur|beg|бег|run|jog/, "run"],
+  [/yur|piyoda|ходьб|прогул|walk|qadam/, "walk"],
+  [/velo|велос|bike|cycl/, "bike"],
+  [/suz|плав|swim|basseyn|бассейн/, "swim"],
+  [/zal|trenaj|kuch|штанг|силов|тренаж|gym|weight|shtanga/, "gym"],
+  [/futbol|футбол|football|soccer/, "football"],
+  [/voleybol|волейбол|volleyball/, "volleyball"],
+  [/basketbol|баскетбол|basketball/, "basketball"],
+  [/arg'amchi|argamchi|скакал|skakal|rope/, "jump_rope"],
+  [/yoga|йога/, "yoga"],
+  [/hiit|kardio|кардио|cardio|krossfit|кроссфит/, "hiit"],
+  [/zina|лестниц|stair/, "stairs"],
+  [/raqs|танц|dance/, "dance"],
+  [/uy yumush|уборк|tozala|house/, "housework"],
+];
+
+/** "30 daqiqa yugurdim" -> { exercise: run, minutes: 30 }. Minutes default to 30. */
+export function parseExercise(text: string): { exercise: Exercise; minutes: number } | null {
+  const t = text.toLowerCase().replace(/[‘’ʻʼ`]/g, "'");
+  const found = EXERCISE_WORDS.find(([re]) => re.test(t));
+  if (!found) return null;
+  const exercise = EXERCISES.find((e) => e.id === found[1])!;
+  const hours = t.match(/(\d+(?:[.,]\d+)?)\s*(soat|час|h\b|hour)/);
+  const mins = t.match(/(\d+(?:[.,]\d+)?)/);
+  let minutes = 30;
+  if (hours) minutes = parseFloat(hours[1]!.replace(",", ".")) * 60;
+  else if (mins) minutes = parseFloat(mins[1]!.replace(",", "."));
+  if (!(minutes > 0 && minutes <= 600)) return null;
+  return { exercise, minutes: Math.round(minutes) };
+}

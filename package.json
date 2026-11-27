@@ -5,7 +5,8 @@
   "description": "Ozginbol: kaloriya hisoblash va sog'lom turmush uchun ilova, Telegram bot va website",
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
-    "test": "npm run test -w @ozginbol/core",
+    "test": "npm run test --workspaces --if-present",
+    "dev:bot": "npm run dev -w @ozginbol/bot",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "dev:web": "npm run dev -w @ozginbol/web",
     "build:web": "npm run build -w @ozginbol/web"

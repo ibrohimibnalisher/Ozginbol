@@ -9,3 +9,5 @@ dist/
 coverage/
 next-env.d.ts
 *.tsbuildinfo
+*.db
+*.db-*

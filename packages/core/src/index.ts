@@ -5,3 +5,5 @@ export { parseMeal, matchFood, searchFoods, gramsFor, scaleMacros, sumMacros } f
 export * from "./goals";
 export * from "./exercise";
 export { UNIT_LABELS, formatUnit } from "./labels";
+export { trainingPlan } from "./training";
+export type { TrainingPlan, TrainingDay } from "./training";

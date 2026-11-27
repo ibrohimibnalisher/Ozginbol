@@ -121,3 +121,14 @@ describe("targets", () => {
     expect(minutesToBurn("walk", 70, 377)).toBe(92);
   });
 });
+
+import { parseExercise } from "../src";
+describe("parseExercise", () => {
+  it("reads exercise and duration", () => {
+    expect(parseExercise("30 daqiqa yugurdim")).toMatchObject({ exercise: { id: "run" }, minutes: 30 });
+    expect(parseExercise("1 soat piyoda yurdim")).toMatchObject({ exercise: { id: "walk" }, minutes: 60 });
+    expect(parseExercise("zal 45")).toMatchObject({ exercise: { id: "gym" }, minutes: 45 });
+    expect(parseExercise("tez yurish")).toMatchObject({ exercise: { id: "walk_fast" }, minutes: 30 });
+    expect(parseExercise("hech narsa")).toBeNull();
+  });
+});
