@@ -17,7 +17,7 @@ export const ACTIVITY: { id: Activity; label: string }[] = [
 export const GOALS: { id: Goal; label: string; hint: string; icon: IconName }[] = [
   { id: "cut", label: "Sushka", hint: "Mushakni saqlab yog'ni quritish", icon: "flame" },
   { id: "lose", label: "Ozish", hint: "Defitsit 25% gacha", icon: "chart" },
-  { id: "maintain", label: "Saqlash", hint: "Vazn joyida qoladi", icon: "scale" },
+  { id: "maintain", label: "Vaznni saqlash", hint: "Vazn joyida qoladi", icon: "scale" },
   { id: "gain", label: "Massa nabor", hint: "Mushak, ortiqcha yog'siz", icon: "run" },
 ];
 

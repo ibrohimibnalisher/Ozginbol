@@ -29,3 +29,16 @@ describe("dictionaries", () => {
     for (const d of [RU, EN]) for (const [k, v] of Object.entries(d)) expect(ph(v), k).toBe(ph(k));
   });
 });
+
+describe("unit plurals", () => {
+  it("declines Russian and pluralises English units", async () => {
+    const { formatUnit } = await import("../src");
+    expect(formatUnit("bolak", 2, "ru")).toBe("2 куска");
+    expect(formatUnit("bolak", 5, "ru")).toBe("5 кусков");
+    expect(formatUnit("bolak", 21, "ru")).toBe("21 кусок");
+    expect(formatUnit("porsiya", 1.5, "ru")).toBe("1.5 порции");
+    expect(formatUnit("bolak", 2, "en")).toBe("2 slices");
+    expect(formatUnit("bolak", 1, "en")).toBe("1 slice");
+    expect(formatUnit("bolak", 2, "uz")).toBe("2 bo'lak");
+  });
+});

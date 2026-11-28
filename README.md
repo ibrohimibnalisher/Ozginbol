@@ -31,6 +31,7 @@ Bot buyruqlari: /bugun, /hafta, /ochir, /suv, /mashq, /vazn, /olcham, /menyu, /o
 - `/retsept Uy oshi: 1 kg guruch, 1 kg mol go'shti, 250 g yog' | 4500 | 12` retseptni masalliqlardan hisoblaydi (tayyor og'irlik va porsiya ixtiyoriy).
 - `/olcham bo'yin 38 bel 85` (ayollar `son 98` ham) yog' foizini hisoblaydi, o'lchovlar tarixini saqlaydi va kunlik me'yorni yog' foizi bilan qayta hisoblaydi.
 - `/taom somsa` taom kaloriyasi qayerdan olinganini masalliqma-masalliq ko'rsatadi. Oddiy matn yozilsa ("2 ta somsa va choy") kundalikka qo'shiladi, "30 daqiqa yugurdim" mashg'ulot sifatida yoziladi. Eslatmalar Toshkent vaqti bilan 13:00 va 20:30 da.
+- `/vitamin` bugungi vitamin va minerallarni kunlik me'yorga nisbatan ko'rsatadi, `/til` tilni almashtiradi (o'zbekcha, ruscha, inglizcha; birinchi kirishda Telegram tilidan olinadi).
 
 ### Mobil ilova
 
@@ -91,3 +92,15 @@ Website va ilova bitta rang tizimidan foydalanadi (`apps/web/app/globals.css` va
 - **Yutuqlar** (`achievements.ts`): 15 ta odat nishoni.
 - **Mashqlar texnikasi** (`library.ts`): uy va zal mashqlari, qadamlar va ko'p uchraydigan xatolar.
 - Ilovada: qadam hisoblagich (expo-sensors), ovqat va suv eslatmalari (expo-notifications), kechagi ovqatni takrorlash, sevimli ovqatlar, har ovqat uchun kaloriya limiti, CSV eksport.
+
+## Vitamin va minerallar
+
+`micros.ts`: 12 ta modda (shakar, natriy, kaliy, kalsiy, temir, magniy, rux, A, C, D, B12, folat) 100 g uchun, USDA SR Legacy'dan. Milliy taomlar masalliqlardan hisoblanadi (tuz ham, tayyor og'irlikning ~0.8%). Kunlik me'yor AQSh Milliy akademiyalari (NIH) DRI jadvallaridan, jins va yosh bo'yicha; natriy uchun yuqori chegara 2300 mg. Kamaygan moddalar uchun o'zbek mahsulotlaridan manba tavsiya qilinadi.
+
+## Tillar
+
+Interfeys o'zbek, rus va ingliz tilida. O'zbekcha matnning o'zi kalit (`t(lang, "O'zbekcha matn")`), tarjimasi `packages/core/src/i18n/ru.ts` va `en.ts` da; tarjima bo'lmasa o'zbekcha ko'rsatiladi. Core ichida raqamli jumlalar `{0}` shablonlari orqali tarjima qilinadi. Yangi matn qo'shilganda `npm run i18n:keys -w @ozginbol/core` kalitlar ro'yxatini yangilaydi, test esa har bir kalitning ru/en tarjimasi borligini tekshiradi.
+
+## Progress fotolar
+
+Ilovada old, yon va orqa pozalar uchun rasm olinadi, "oldin" va "keyin" yonma-yon, o'tgan kunlar va vazn farqi bilan ko'rsatiladi. Rasmlar faqat telefonda (`documentDirectory/progress/`) saqlanadi.

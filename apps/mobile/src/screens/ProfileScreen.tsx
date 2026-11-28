@@ -29,7 +29,7 @@ export default function ProfileScreen({ onMyFoods, onBody, onPhotos }: { onMyFoo
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 14 }} keyboardShouldPersistTaps="handled">
       <H1>{tr("Profil")}</H1>
       <Card style={{ gap: 10 }}>
-        <Text style={{ color: t.text, fontSize: 16, fontWeight: "800" }}>{tr("Til")} · Язык · Language</Text>
+        <Text style={{ color: t.text, fontSize: 16, fontWeight: "800" }}>Til · Язык · Language</Text>
         <Segmented value={lang} onChange={(v) => {
             dispatch({ type: "settings", patch: { lang: v } });
             if (state.settings.reminders) void setDailyReminders(true, translator(v));
