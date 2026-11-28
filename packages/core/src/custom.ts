@@ -1,3 +1,4 @@
+import { computeRecipeMicros } from "./recipes";
 import { normalize } from "./normalize";
 import { parseMeal, sumMacros } from "./parser";
 import type { Food, Macros, ParseResult } from "./types";
@@ -85,6 +86,9 @@ export function createRecipeFood(input: RecipeInput, extraFoods: Food[] = [], id
     ref: "Sizning retseptingiz",
     recipe: { items: parsed.items.map((i) => ({ id: i.food.id, grams: i.grams })), yieldG, note: input.ingredients },
   };
+  const byId = new Map(parsed.items.map((i) => [i.food.id, i.food]));
+  const micros = computeRecipeMicros(food.recipe!, (fid) => byId.get(fid));
+  if (micros) food.micros = micros;
   return { food, parsed };
 }
 

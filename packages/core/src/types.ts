@@ -26,6 +26,22 @@ export interface Macros {
   fiber?: number;
 }
 
+/** Vitamins and minerals. Units: sugar g; vitA, vitD, vitB12, folate µg; the rest mg. */
+export interface Micros {
+  sugar: number;
+  sodium: number;
+  potassium: number;
+  calcium: number;
+  iron: number;
+  magnesium: number;
+  zinc: number;
+  vitA: number;
+  vitC: number;
+  vitD: number;
+  vitB12: number;
+  folate: number;
+}
+
 export type SizeKey = "kichik" | "orta" | "katta";
 
 export interface RecipeItem {
@@ -78,6 +94,8 @@ export interface Food {
   ref?: string;
   /** For recipe dishes: the ingredients the numbers are computed from. */
   recipe?: Recipe;
+  /** Vitamins and minerals per 100 g, when known. */
+  micros?: Micros;
   /** Grams of one default unit for small / medium / large pieces. */
   sizes?: Partial<Record<SizeKey, number>>;
 }

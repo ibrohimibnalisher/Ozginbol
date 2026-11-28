@@ -1,6 +1,7 @@
 import type { Food, FoodCategory, SizeKey, UnitKey } from "./types";
 import { INGREDIENTS } from "./ingredients";
-import { RECIPES, computeRecipe } from "./recipes";
+import { RECIPES, computeRecipe, computeRecipeMicros } from "./recipes";
+import { MICRO_TABLE } from "./microdata";
 
 type M = [kcal: number, protein: number, fat: number, carbs: number, fiber?: number];
 
@@ -429,6 +430,10 @@ const SIZES: Record<string, Partial<Record<SizeKey, number>>> = {
   lavash_fastfud: { kichik: 250, orta: 350, katta: 450 },
 };
 
+for (const x of [...INGREDIENTS, ...DISHES]) {
+  const m = MICRO_TABLE[x.id];
+  if (m) x.micros = m;
+}
 const ingById = new Map(INGREDIENTS.map((x) => [x.id, x]));
 for (const d of DISHES) {
   const recipe = RECIPES[d.id];
@@ -436,6 +441,8 @@ for (const d of DISHES) {
     d.recipe = recipe;
     d.per100 = computeRecipe(recipe, (id) => ingById.get(id));
     d.source = "recipe";
+    const micros = computeRecipeMicros(recipe, (id) => ingById.get(id));
+    if (micros) d.micros = micros;
   }
   const sz = SIZES[d.id];
   if (sz) d.sizes = sz;

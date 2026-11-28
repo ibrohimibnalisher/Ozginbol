@@ -65,6 +65,8 @@ export const INGREDIENTS: Food[] = [
     [15, 0.7, 0.1, 3.6, 0.5], "USDA SR Legacy 11205: Cucumber, with peel, raw", { dona: 100 }),
   ing("x_qatiq", ["Qatiq", "Катык", "Katyk"], ["qatiq", "катык"],
     [60, 3, 3.2, 4.1], "Rus oziq-ovqat tarkibi jadvali (Skurikhin): katyk 3.2%", { stakan: 250 }, "ru-table"),
+  ing("x_tuz", ["Tuz", "Соль", "Salt"], ["tuz", "osh tuzi", "соль", "salt"],
+    [0, 0, 0, 0], "USDA SR Legacy 02047: Salt, table", { choy_qoshiq: 6, osh_qoshiq: 18 }),
   ing("x_suv", ["Suv", "Вода", "Water"], ["suv", "вода", "water"],
     [0, 0, 0, 0], "Suv kaloriyasiz", { stakan: 250 }),
 ];
