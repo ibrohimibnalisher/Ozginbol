@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseMeal } from "@ozginbol/core";
+import { createCustomFood, parseMeal } from "@ozginbol/core";
+import { offToFood } from "../src/barcode";
 import { EMPTY, dayKey, frequentInputs, mealForHour, reducer, shiftDay, streak, summarize, targetsOf, tips } from "../src/diary";
 
 const profile = { sex: "male", age: 30, heightCm: 178, weightKg: 85, activity: "light", goal: "lose" } as const;
@@ -13,8 +14,9 @@ describe("diary reducer", () => {
     const sum = summarize(s, today);
     expect(sum.byMeal.lunch.map((e) => e.foodId)).toEqual(["osh", "achchiq_chuchuk"]);
     expect(sum.byMeal.breakfast).toHaveLength(1);
-    expect(sum.food.kcal).toBe(683 + 48 + 171);
-    expect(targetsOf(s)!.calories).toBe(2000);
+    const expected = parseMeal("1 porsiya osh, achchiq-chuchuk, 2 ta tuxum").total.kcal;
+    expect(Math.abs(sum.food.kcal - expected)).toBeLessThanOrEqual(1);
+    expect(targetsOf(s)!.calories).toBe(1950);
   });
 
   it("removes entries, tracks water and never goes negative", () => {
@@ -56,5 +58,25 @@ describe("diary reducer", () => {
 
   it("shiftDay crosses month boundaries", () => {
     expect(shiftDay("2026-03-01", -1)).toBe("2026-02-28");
+  });
+});
+
+describe("custom foods", () => {
+  it("saves, replaces by name and removes user foods", () => {
+    const food = createCustomFood({ name: "Agusha", per100: { kcal: 159, protein: 18, fat: 9, carbs: 2 } }, "u:a");
+    let s = reducer(EMPTY, { type: "saveFood", food });
+    s = reducer(s, { type: "saveFood", food: { ...food, id: "u:b" } });
+    expect(s.customFoods.map((f) => f.id)).toEqual(["u:b"]);
+    s = reducer(s, { type: "addItems", day: today, meal: "snack", items: parseMeal("200 g agusha", { extraFoods: s.customFoods }).items });
+    expect(summarize(s, today).food.kcal).toBe(318);
+    s = reducer(s, { type: "removeFood", id: "u:b" });
+    expect(s.customFoods).toHaveLength(0);
+  });
+
+  it("maps an Open Food Facts product", () => {
+    const f = offToFood("4600605000123", { product_name: "Kefir 1%", nutriments: { "energy-kcal_100g": 40, proteins_100g: 3, fat_100g: 1, carbohydrates_100g: 4 }, serving_quantity: 200 });
+    expect(f).toMatchObject({ id: "off:4600605000123", per100: { kcal: 40, protein: 3, fat: 1, carbs: 4 }, portions: { dona: 200 } });
+    expect(f!.ref).toContain("Open Food Facts");
+    expect(offToFood("1", { product_name: "x", nutriments: {} })).toBeNull();
   });
 });

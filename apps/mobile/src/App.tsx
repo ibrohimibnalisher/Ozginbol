@@ -6,6 +6,7 @@ import { dayKey, mealForHour, type MealType } from "./diary";
 import { DiaryProvider, useDiary } from "./store";
 import { useTheme } from "./theme";
 import AddFood from "./screens/AddFood";
+import MyFoods from "./screens/MyFoods";
 import Onboarding from "./screens/Onboarding";
 import ProfileScreen from "./screens/ProfileScreen";
 import Progress from "./screens/Progress";
@@ -29,6 +30,7 @@ function Shell() {
   const [tab, setTab] = useState<Tab>("today");
   const [day, setDay] = useState(dayKey());
   const [adding, setAdding] = useState<MealType | null>(null);
+  const [myFoods, setMyFoods] = useState(false);
 
   if (!ready) {
     return (
@@ -40,6 +42,7 @@ function Shell() {
   if (!state.profile) return <Onboarding onDone={(p) => dispatch({ type: "setProfile", profile: p })} />;
 
   const openAdd = (meal?: MealType) => {
+    setMyFoods(false);
     setTab("today");
     setAdding(meal ?? mealForHour(new Date().getHours()));
   };
@@ -47,8 +50,10 @@ function Shell() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={{ flex: 1 }}>
-        {adding ? (
-          <AddFood day={day} meal={adding} onClose={() => setAdding(null)} />
+        {myFoods ? (
+          <MyFoods onClose={() => setMyFoods(false)} />
+        ) : adding ? (
+          <AddFood day={day} meal={adding} onClose={() => setAdding(null)} onMyFoods={() => setMyFoods(true)} />
         ) : tab === "today" ? (
           <Today day={day} setDay={setDay} onAdd={openAdd} />
         ) : tab === "progress" ? (
@@ -56,7 +61,7 @@ function Shell() {
         ) : tab === "training" ? (
           <Training />
         ) : (
-          <ProfileScreen />
+          <ProfileScreen onMyFoods={() => setMyFoods(true)} />
         )}
       </View>
 
@@ -99,6 +104,7 @@ function Shell() {
               key={x.id}
               onPress={() => {
                 setAdding(null);
+                setMyFoods(false);
                 setTab(x.id as Tab);
               }}
               style={{ flex: 1, alignItems: "center", paddingVertical: 4 }}

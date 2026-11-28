@@ -6,8 +6,26 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": { "supportsTablet": false, "bundleIdentifier": "uz.ozginbol.app" },
-    "android": { "package": "uz.ozginbol.app", "edgeToEdgeEnabled": true },
-    "web": { "bundler": "metro", "output": "single" }
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "uz.ozginbol.app"
+    },
+    "android": {
+      "package": "uz.ozginbol.app",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Mahsulot shtrix-kodini skanerlash uchun kamera kerak.",
+          "recordAudioAndroid": false
+        }
+      ]
+    ]
   }
 }

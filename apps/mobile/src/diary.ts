@@ -1,4 +1,4 @@
-import type { Macros, ParsedItem, Profile, Targets, UnitKey } from "@ozginbol/core";
+import type { Food, Macros, ParsedItem, Profile, Targets, UnitKey } from "@ozginbol/core";
 import { caloriesBurned, computeTargets } from "@ozginbol/core";
 
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
@@ -38,9 +38,11 @@ export interface DiaryState {
   water: Record<string, number>;
   weights: { day: string; kg: number }[];
   workouts: Workout[];
+  /** The user's own products, recipes and scanned barcodes. */
+  customFoods: Food[];
 }
 
-export const EMPTY: DiaryState = { version: 1, profile: null, entries: [], water: {}, weights: [], workouts: [] };
+export const EMPTY: DiaryState = { version: 1, profile: null, entries: [], water: {}, weights: [], workouts: [], customFoods: [] };
 
 /** Local calendar day, YYYY-MM-DD. */
 export function dayKey(d = new Date()): string {
@@ -75,6 +77,8 @@ export type Action =
   | { type: "weight"; day: string; kg: number }
   | { type: "workout"; day: string; exerciseId: string; minutes: number }
   | { type: "removeWorkout"; id: string }
+  | { type: "saveFood"; food: Food }
+  | { type: "removeFood"; id: string }
   | { type: "reset" };
 
 export function reducer(s: DiaryState, a: Action): DiaryState {
@@ -122,6 +126,12 @@ export function reducer(s: DiaryState, a: Action): DiaryState {
     }
     case "removeWorkout":
       return { ...s, workouts: s.workouts.filter((w) => w.id !== a.id) };
+    case "saveFood": {
+      const name = a.food.name.uz.toLowerCase();
+      return { ...s, customFoods: [...s.customFoods.filter((f) => f.id !== a.food.id && f.name.uz.toLowerCase() !== name), a.food] };
+    }
+    case "removeFood":
+      return { ...s, customFoods: s.customFoods.filter((f) => f.id !== a.id) };
     case "reset":
       return EMPTY;
   }

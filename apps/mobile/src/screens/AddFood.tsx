@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { formatUnit, parseMeal, searchFoods } from "@ozginbol/core";
+import type { ParsedItem, SizeKey } from "@ozginbol/core";
+import { SIZE_LABELS, formatUnit, parseMeal, scaleMacros, searchFoods, sumMacros } from "@ozginbol/core";
+import FoodInfo from "../components/FoodInfo";
 import { Button, Card, Chip, H1, Input, Muted, Row } from "../components/ui";
 import { MEALS, frequentInputs, type MealType } from "../diary";
 import { useDiary } from "../store";
@@ -8,21 +10,35 @@ import { useTheme } from "../theme";
 
 const POPULAR = ["1 porsiya osh", "1 ta somsa", "1 kosa lag'mon", "5 ta manti", "1 bo'lak non", "1 piyola choy", "2 ta tuxum", "1 stakan qatiq"];
 
-export default function AddFood({ day, meal: initialMeal, onClose }: { day: string; meal: MealType; onClose: () => void }) {
+export default function AddFood({ day, meal: initialMeal, onClose, onMyFoods }: { day: string; meal: MealType; onClose: () => void; onMyFoods: () => void }) {
   const t = useTheme();
   const { state, dispatch } = useDiary();
   const [meal, setMeal] = useState<MealType>(initialMeal);
   const [text, setText] = useState("");
-  const parsed = useMemo(() => parseMeal(text), [text]);
+  const [edits, setEdits] = useState<Record<number, { g: number; size?: SizeKey }>>({});
+  const [open, setOpen] = useState<number | null>(null);
+  const parsed = useMemo(() => parseMeal(text, { extraFoods: state.customFoods }), [text, state.customFoods]);
   const quick = useMemo(() => {
     const mine = frequentInputs(state, 8);
     return [...mine, ...POPULAR.filter((p) => !mine.includes(p))].slice(0, 10);
   }, [state]);
 
-  const append = (s: string) => setText((cur) => (cur.trim() ? `${cur.trim()}, ${s}` : s));
+  const items: ParsedItem[] = parsed.items.map((it, i) => {
+    const e = edits[i];
+    if (!e) return it;
+    const unitG = e.size && it.food.sizes?.[e.size] ? it.food.sizes[e.size]! : it.grams / it.quantity;
+    return { ...it, grams: e.g, quantity: Math.round((e.g / unitG) * 10) / 10, size: e.size ?? it.size, nutrition: scaleMacros(it.food.per100, e.g) };
+  });
+  const total = sumMacros(items.map((i) => i.nutrition));
+  const setG = (i: number, g: number, size?: SizeKey) => setEdits((o) => ({ ...o, [i]: { g: Math.max(1, Math.round(g)), size: size ?? o[i]?.size } }));
+
+  const append = (s: string) => {
+    setEdits({});
+    setText((cur) => (cur.trim() ? `${cur.trim()}, ${s}` : s));
+  };
   const save = () => {
-    if (!parsed.items.length) return;
-    dispatch({ type: "addItems", day, meal, items: parsed.items });
+    if (!items.length) return;
+    dispatch({ type: "addItems", day, meal, items });
     onClose();
   };
 
@@ -43,62 +59,92 @@ export default function AddFood({ day, meal: initialMeal, onClose }: { day: stri
 
       <Input
         value={text}
-        onChangeText={setText}
-        placeholder="Masalan: 2 ta somsa va 1 piyola choy"
+        onChangeText={(v) => {
+          setText(v);
+          setEdits({});
+        }}
+        placeholder="Masalan: 2 ta katta somsa va 1 piyola choy"
         multiline
         autoFocus
         style={{ minHeight: 90, fontSize: 18, textAlignVertical: "top" }}
       />
 
-      {parsed.items.length > 0 && (
+      {items.length > 0 && (
         <Card>
-          {parsed.items.map((it, i) => (
-            <Row key={i} style={{ justifyContent: "space-between", paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderTopColor: t.border }}>
-              <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={{ color: t.text, fontWeight: "600", fontSize: 15 }}>{it.food.name.uz}</Text>
-                <Muted>
-                  {it.unit === "g" || it.unit === "ml" ? `${it.grams} ${it.unit}` : `${formatUnit(it.unit, it.quantity)} · ${it.grams} ${it.food.liquid ? "ml" : "g"}`}
-                  {it.confidence < 0.9 ? ` · "${it.input}" deb tushundik` : ""}
-                </Muted>
+          {items.map((it, i) => {
+            const unitG = it.grams / it.quantity;
+            const count = Math.max(1, Math.round(it.quantity));
+            const sizes = it.food.sizes && it.unit === it.food.defaultUnit ? it.food.sizes : null;
+            return (
+              <View key={i} style={{ paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderTopColor: t.border }}>
+                <Pressable onPress={() => setOpen(open === i ? null : i)}>
+                  <Row style={{ justifyContent: "space-between" }}>
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={{ color: t.text, fontWeight: "600", fontSize: 15 }}>{it.food.name.uz}</Text>
+                      <Muted>
+                        {it.unit === "g" || it.unit === "ml" ? "" : `${formatUnit(it.unit, it.quantity)}${it.size ? ` (${SIZE_LABELS[it.size]})` : ""} · `}
+                        {it.grams} {it.food.liquid ? "ml" : "g"}
+                        {it.confidence < 0.9 ? ` · "${it.input}" deb tushundik` : ""}
+                      </Muted>
+                    </View>
+                    <Text style={{ color: t.text, fontWeight: "800", fontSize: 16 }}>{it.nutrition.kcal}</Text>
+                  </Row>
+                </Pressable>
+                {open === i && (
+                  <View style={{ marginTop: 8 }}>
+                    <Row style={{ flexWrap: "wrap" }}>
+                      <Chip label="−" onPress={() => setG(i, it.grams - (it.unit === "g" || it.unit === "ml" ? 50 : unitG * 0.5))} />
+                      <Chip label="+" onPress={() => setG(i, it.grams + (it.unit === "g" || it.unit === "ml" ? 50 : unitG * 0.5))} />
+                      {sizes &&
+                        (Object.keys(sizes) as SizeKey[]).map((s) => (
+                          <Chip key={s} label={`${SIZE_LABELS[s]} ${sizes[s]} g`} active={it.grams === sizes[s]! * count} onPress={() => setG(i, sizes[s]! * count, s)} />
+                        ))}
+                    </Row>
+                    <FoodInfo food={it.food} />
+                  </View>
+                )}
               </View>
-              <Text style={{ color: t.text, fontWeight: "800", fontSize: 16 }}>{it.nutrition.kcal}</Text>
-            </Row>
-          ))}
+            );
+          })}
           <Row style={{ justifyContent: "space-between", marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.border }}>
             <Muted>
-              O {Math.round(parsed.total.protein)} g · Y {Math.round(parsed.total.fat)} g · U {Math.round(parsed.total.carbs)} g
+              O {Math.round(total.protein)} g · Y {Math.round(total.fat)} g · U {Math.round(total.carbs)} g
             </Muted>
-            <Text style={{ color: t.accent, fontWeight: "800", fontSize: 20 }}>{parsed.total.kcal} kkal</Text>
+            <Text style={{ color: t.accent, fontWeight: "800", fontSize: 20 }}>{total.kcal} kkal</Text>
           </Row>
+          <Muted style={{ fontSize: 12, marginTop: 4 }}>Taomni bosing: hajmi, grammi va kaloriya manbasi.</Muted>
         </Card>
       )}
 
       {parsed.unknown.map((u) => {
-        const sugg = searchFoods(u, 3);
+        const sugg = searchFoods(u, 3, state.customFoods);
         return (
           <Card key={u} style={{ backgroundColor: t.card2 }}>
             <Text style={{ color: t.text }}>"{u}" bazada topilmadi.</Text>
-            {sugg.length > 0 && (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
-                {sugg.map((s) => (
-                  <Chip key={s.id} label={s.name.uz} onPress={() => setText((cur) => cur.replace(u, s.aliases[0] ?? s.name.uz))} />
-                ))}
-              </View>
-            )}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
+              {sugg.map((s) => (
+                <Chip key={s.id} label={s.name.uz} onPress={() => setText((cur) => cur.replace(u, s.aliases[0] ?? s.name.uz))} />
+              ))}
+              <Chip label="➕ O'zim qo'shaman" onPress={onMyFoods} />
+            </View>
           </Card>
         );
       })}
 
-      <Button title={parsed.items.length ? `Qo'shish · ${parsed.total.kcal} kkal` : "Qo'shish"} onPress={save} disabled={!parsed.items.length} />
+      <Button title={items.length ? `Qo'shish · ${total.kcal} kkal` : "Qo'shish"} onPress={save} disabled={!items.length} />
 
       <View>
         <Text style={{ color: t.muted, marginBottom: 8 }}>Tez qo'shish</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+          {state.customFoods.slice(-4).map((f) => (
+            <Chip key={f.id} label={`⭐ ${f.name.uz}`} onPress={() => append(f.portions.dona ? `1 ta ${f.name.uz}` : `100 g ${f.name.uz}`)} />
+          ))}
           {quick.map((q) => (
             <Chip key={q} label={q} onPress={() => append(q)} />
           ))}
         </View>
       </View>
+      <Button kind="ghost" title="➕ O'z mahsulotim · retsept · shtrix-kod" onPress={onMyFoods} />
     </ScrollView>
   );
 }

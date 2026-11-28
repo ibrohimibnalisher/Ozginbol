@@ -8,7 +8,7 @@ import { ProfileForm } from "./Onboarding";
 
 const BMI: Record<string, string> = { underweight: "vazn kam", normal: "normal", overweight: "ortiqcha vazn", obese: "semizlik" };
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ onMyFoods }: { onMyFoods: () => void }) {
   const t = useTheme();
   const { state, dispatch } = useDiary();
   const [saved, setSaved] = useState(false);
@@ -37,6 +37,7 @@ export default function ProfileScreen() {
           }}
         />
       </Card>
+      <Button kind="ghost" title={`⭐ Mahsulotlarim (${state.customFoods.length})`} onPress={onMyFoods} />
       <Card>
         <Muted>Barcha ma'lumotlar faqat shu telefonda saqlanadi.</Muted>
         <Text style={{ height: 10 }} />
