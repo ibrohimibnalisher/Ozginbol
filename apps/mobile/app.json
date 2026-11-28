@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "BeHealthy",
+    "slug": "behealthy",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "uz.behealthy.app"
+    },
+    "android": {
+      "package": "uz.behealthy.app",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.ACTIVITY_RECOGNITION"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2bd177"
+      },
+      "versionCode": 1
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Shtrix-kodni skanerlash va progress rasmlarini olish uchun kamera kerak.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Qadamlaringizni hisoblash uchun harakat ma'lumoti kerak."
+        }
+      ],
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Progress rasmlarini galereyadan tanlash uchun ruxsat kerak.",
+          "cameraPermission": "Progress rasmlarini olish uchun kamera kerak."
+        }
+      ]
+    ],
+    "icon": "./assets/icon.png"
+  }
+}
