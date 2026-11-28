@@ -181,6 +181,7 @@ export const HELP = [
   "/suv: +250 ml suv (yoki <code>/suv 500</code>)",
   "/mashq: mashg'ulot (<code>/mashq 30 daqiqa yugurish</code>)",
   "/vazn: vaznni yozish (<code>/vazn 78.5</code>)",
+  "/olcham: yog' foizi (<code>/olcham bo'yin 38 bel 85</code>)",
   "/maqsad: shaxsiy me'yorni qayta hisoblash",
   "/mashqlar: maqsadingizga mos mashg'ulot rejasi",
   "/eslatma: kunlik eslatmani yoqish/o'chirish",

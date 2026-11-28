@@ -1,6 +1,6 @@
 import type { Activity, Goal, Sex } from "@ozginbol/core";
 import {
-  GOAL_INFO, caloriesBurned, computeTargets, createCustomFood, createRecipeFood, formatUnit, getFood, parseCustomFoodLine,
+  FAT_CATEGORY_LABELS, GOAL_INFO, MEASURE_TIPS, RISK_LABELS, bodyComposition, caloriesBurned, measurementError, parseMeasurements, computeTargets, createCustomFood, createRecipeFood, formatUnit, getFood, parseCustomFoodLine,
   parseExercise, parseMeal, recipeLines, searchFoods, sourceText, trainingPlan,
 } from "@ozginbol/core";
 import type { Food } from "@ozginbol/core";
@@ -333,3 +333,68 @@ export function reminderFor(store: Store, user: User, kind: "lunch" | "evening")
 }
 
 export { HELP };
+
+const MEASURE_HELP = [
+  "📏 <b>Yog' foizi va o'lchamlar</b> (US Navy lenta usuli)",
+  "",
+  "Santimetr lenta bilan o'lchab yozing:",
+  "<code>/olcham bo'yin 38 bel 85</code>",
+  "Ayollar son aylanasini ham: <code>/olcham bo'yin 32 bel 72 son 98</code>",
+  "Vaznni ham yangilash: <code>/olcham bo'yin 38 bel 85 vazn 78</code>",
+  "",
+  ...MEASURE_TIPS.map((t) => `• <b>${t.label}:</b> ${t.tip}`),
+  "• Ertalab, och qoringa o'lchang. Haftada bir marta yetarli.",
+].join("\n");
+
+const sign = (x: number) => (x > 0 ? `+${x}` : String(x));
+
+export function measure(store: Store, user: User, arg: string): Reply {
+  const u = store.getUser(user.id) ?? user;
+  const hist = store.measurements(u.id, 30);
+  const parsed = parseMeasurements(arg ?? "");
+  if (parsed.neckCm === undefined || parsed.waistCm === undefined) {
+    const lines = hist.slice(-6).reverse().map((h) => `${h.day.slice(5).split("-").reverse().join(".")}: <b>${h.bodyFatPct}%</b> · bel ${h.waistCm} · bo'yin ${h.neckCm} · ${h.weightKg} kg`);
+    return { text: [MEASURE_HELP, lines.length ? "\n<b>Oxirgi o'lchovlar</b>\n" + lines.join("\n") : ""].filter(Boolean).join("\n") };
+  }
+  if (!u.sex || !u.heightCm || !(parsed.weightKg ?? u.weightKg)) {
+    return { text: "Avval jins, bo'y va vazningizni kiriting: /maqsad" };
+  }
+  if (parsed.weightKg !== undefined) {
+    if (parsed.weightKg < 30 || parsed.weightKg > 300) return { text: "Vazn 30-300 kg oralig'ida bo'lsin." };
+    store.setWeight(u.id, parsed.weightKg);
+  }
+  const m = {
+    sex: u.sex,
+    age: u.age ?? undefined,
+    heightCm: u.heightCm,
+    weightKg: parsed.weightKg ?? u.weightKg!,
+    neckCm: parsed.neckCm,
+    waistCm: parsed.waistCm,
+    hipCm: parsed.hipCm,
+  };
+  const err = measurementError(m);
+  if (err) return { text: `⚠️ ${err}.\n\n${MEASURE_HELP}` };
+  const b = bodyComposition(m);
+  const day = tashkentDay();
+  const earlier = hist.filter((h) => h.day !== day);
+  const prev = earlier[earlier.length - 1];
+  const first = earlier[0];
+  store.saveMeasurement(u.id, { day, neckCm: m.neckCm, waistCm: m.waistCm, hipCm: m.hipCm, weightKg: m.weightKg, bodyFatPct: b.bodyFatPct });
+  const t = targetsFor(store.getUser(u.id)!);
+  const lines = [
+    `📏 <b>O'lchov yozildi</b>`,
+    "",
+    `Yog' foizi: <b>${b.bodyFatPct}%</b> (${FAT_CATEGORY_LABELS[b.category]}). Sog'lom oraliq: ${b.healthyRange[0]}-${b.healthyRange[1]}%`,
+    `Yog' massasi: ${b.fatMassKg} kg · yog'siz massa: ${b.leanMassKg} kg`,
+    `Bel ÷ bo'y: ${b.waistToHeight.toFixed(2)} (xavf: ${RISK_LABELS[b.whtrRisk]}) · bel bo'yicha xavf: ${RISK_LABELS[b.waistRisk]}`,
+    prev
+      ? `\nOldingi o'lchovdan (${prev.day}): yog' ${sign(Math.round((b.bodyFatPct - prev.bodyFatPct) * 10) / 10)}%, bel ${sign(Math.round((m.waistCm - prev.waistCm) * 10) / 10)} sm, vazn ${sign(Math.round((m.weightKg - prev.weightKg) * 10) / 10)} kg`
+      : "",
+    first && first !== prev ? `Boshidan (${first.day}): yog' ${sign(Math.round((b.bodyFatPct - first.bodyFatPct) * 10) / 10)}%, bel ${sign(Math.round((m.waistCm - first.waistCm) * 10) / 10)} sm` : "",
+    t ? `\nKunlik me'yor endi yog' foizi bilan (Katch-McArdle) hisoblanadi: <b>${t.calories} kkal</b>, oqsil ${t.protein} g.` : "",
+    "",
+    "<b>Qanday hisoblandi</b>",
+    ...b.steps.map((s, i) => `${i + 1}. ${esc(s)}`),
+  ];
+  return { text: lines.filter((x) => x !== "").join("\n").replace(/\n{3,}/g, "\n\n") };
+}

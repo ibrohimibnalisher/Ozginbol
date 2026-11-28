@@ -1,28 +1,47 @@
 import { FOODS } from "@ozginbol/core";
 import Home from "../components/Home";
+import ThemeToggle from "../components/ThemeToggle";
+import { Logo, Send } from "../components/Icons";
 
 export default function Page() {
   return (
-    <div className="wrap">
+    <>
       <header className="top">
-        <a className="logo" href="/">
-          Ozgin<span>bol</span>
-        </a>
-        <nav className="links">
-          <a href="#hisoblash">Hisoblash</a>
-          <a href="#maqsad">Kunlik me'yor</a>
-          <a href="#mening">Mening mahsulotlarim</a>
-          <a href="#taomlar">Taomlar bazasi</a>
-        </nav>
+        <div className="wrap">
+          <a className="logo" href="/">
+            <Logo />
+            Ozginbol
+          </a>
+          <nav className="links">
+            <a href="#hisoblash">Kaloriya</a>
+            <a href="#maqsad">Kunlik me'yor</a>
+            <a href="#tana">Yog' foizi</a>
+            <a href="#mening">Mahsulotlarim</a>
+            <a href="#taomlar">Taomlar</a>
+          </nav>
+          <div className="head-actions">
+            <ThemeToggle />
+            <a className="pill-link" href="#bot">
+              <Send />
+              <span>Telegram bot</span>
+            </a>
+          </div>
+        </div>
       </header>
 
-      <Home />
+      <Home foodCount={FOODS.length} />
 
-      <footer>
-        Bazada {FOODS.length} ta taom, mahsulot va masalliq. Qiymatlar 100 g uchun USDA FoodData Central, rus oziq-ovqat
-        jadvallari va o'zbek oshxonasining ochiq retseptlari asosida hisoblangan (har bir taomning manbasini bosib ko'ring). Bu tibbiy maslahat emas: kasalligingiz
-        bo'lsa, shifokor bilan maslahatlashing.
-      </footer>
-    </div>
+      <div className="wrap">
+        <footer>
+          <div className="logo">
+            <Logo size={24} />
+            Ozginbol
+          </div>
+          Bazada {FOODS.length} ta taom, mahsulot va masalliq. Qiymatlar 100 g uchun USDA FoodData Central, rus oziq-ovqat jadvallari va o'zbek
+          oshxonasining ochiq retseptlari asosida hisoblangan (har bir taomning manbasini bosib ko'ring). Yog' foizi AQSh harbiy-dengiz flotining
+          (US Navy) lenta usulida hisoblanadi. Bu tibbiy maslahat emas: kasalligingiz bo'lsa, shifokor bilan maslahatlashing.
+        </footer>
+      </div>
+    </>
   );
 }

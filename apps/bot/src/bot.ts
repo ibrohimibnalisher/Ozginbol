@@ -2,7 +2,7 @@ import { Bot, InlineKeyboard, type Context } from "grammy";
 import type { Store } from "./db";
 import { tashkentDay } from "./db";
 import {
-  HELP, findFood, handleCallback, myFoods, newFood, newRecipe, handleText, plan, reminderFor, startOnboarding, today, toggleReminder,
+  HELP, findFood, measure, handleCallback, myFoods, newFood, newRecipe, handleText, plan, reminderFor, startOnboarding, today, toggleReminder,
   undo, water, week, weight, workout, type Reply,
 } from "./logic";
 
@@ -39,6 +39,7 @@ export function createBot(token: string, store: Store): Bot {
   bot.command("ochir", (ctx) => send(ctx, undo(store, userOf(ctx))));
   bot.command("suv", (ctx) => send(ctx, water(store, userOf(ctx), Number(ctx.match) || 250)));
   bot.command("vazn", (ctx) => send(ctx, weight(store, userOf(ctx), ctx.match)));
+  bot.command(["olcham", "olchov"], (ctx) => send(ctx, measure(store, userOf(ctx), ctx.match)));
   bot.command("mashq", (ctx) => send(ctx, workout(store, userOf(ctx), ctx.match)));
   bot.command("mashqlar", (ctx) => send(ctx, plan(userOf(ctx))));
   bot.command(["taom", "manba"], (ctx) => send(ctx, findFood(store, userOf(ctx), ctx.match)));

@@ -17,6 +17,7 @@ await bot.api.setMyCommands([
   { command: "suv", description: "Suv qo'shish" },
   { command: "mashq", description: "Mashg'ulot yozish" },
   { command: "vazn", description: "Vaznni yozish" },
+  { command: "olcham", description: "Yog' foizi: bo'yin va bel o'lchami" },
   { command: "maqsad", description: "Kunlik me'yorni hisoblash" },
   { command: "mashqlar", description: "Mashg'ulot rejasi" },
   { command: "taom", description: "Taom va uning manbasi" },

@@ -12,3 +12,4 @@ export type { TrainingPlan, TrainingDay } from "./training";
 export { createCustomFood, createRecipeFood, parseCustomFoodLine, validMacros } from "./custom";
 export type { CustomFoodInput, RecipeInput } from "./custom";
 export { sourceText, recipeLines, SIZE_LABELS } from "./sources";
+export * from "./body";

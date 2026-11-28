@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import type { Food, SizeKey, Targets } from "@ozginbol/core";
 import { SIZE_LABELS, formatUnit, minutesToBurn, parseMeal, scaleMacros, searchFoods, sumMacros } from "@ozginbol/core";
 import FoodSource from "./FoodSource";
+import { Flame } from "./Icons";
+import { MacroBar, Ring } from "./Ring";
 
 const EXAMPLES = [
   "2 ta somsa va 1 piyola choy",
@@ -34,10 +36,9 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
   });
   const total = sumMacros(items.map((i) => i.nutrition));
   const setG = (k: string, g: number, size?: SizeKey) => setGrams((o) => ({ ...o, [k]: { g: Math.max(1, Math.round(g)), size: size ?? o[k]?.size } }));
-  const pct = (v: number, t: number) => Math.min(100, Math.round((v / t) * 100));
 
   return (
-    <div className="card">
+    <div className="card calc-card">
       <textarea
         className="meal"
         placeholder="Masalan: 2 ta somsa, 1 kosa lag'mon va 1 piyola choy"
@@ -60,27 +61,17 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
 
       {items.length > 0 && (
         <>
-          <div className="totals">
-            <div className="stat kcal">
-              <div className="v">{total.kcal}</div>
-              <div className="l">kkal{targets ? ` · kunlik me'yorning ${pct(total.kcal, targets.calories)}%` : ""}</div>
-              {targets && (
-                <div className={`bar ${total.kcal > targets.calories ? "over" : ""}`}>
-                  <i style={{ width: `${pct(total.kcal, targets.calories)}%` }} />
-                </div>
-              )}
-            </div>
-            <div className="stat p">
-              <div className="v">{fmt(total.protein)}</div>
-              <div className="l">oqsil, g{targets ? ` / ${targets.protein}` : ""}</div>
-            </div>
-            <div className="stat f">
-              <div className="v">{fmt(total.fat)}</div>
-              <div className="l">yog', g{targets ? ` / ${targets.fat}` : ""}</div>
-            </div>
-            <div className="stat c">
-              <div className="v">{fmt(total.carbs)}</div>
-              <div className="l">uglevod, g{targets ? ` / ${targets.carbs}` : ""}</div>
+          <div className="summary">
+            <Ring
+              value={total.kcal}
+              max={targets?.calories ?? null}
+              label={String(total.kcal)}
+              sub={targets ? `/ ${targets.calories} kkal` : "kkal"}
+            />
+            <div className="macros">
+              <MacroBar name="Oqsil" cls="c-p" value={total.protein} target={targets?.protein} />
+              <MacroBar name="Yog'" cls="c-f" value={total.fat} target={targets?.fat} />
+              <MacroBar name="Uglevod" cls="c-c" value={total.carbs} target={targets?.carbs} />
             </div>
           </div>
 
@@ -91,6 +82,9 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
               const sizes = it.food.sizes && it.unit === it.food.defaultUnit ? it.food.sizes : null;
               return (
                 <li className="item" key={it.k}>
+                  <div className="avatar" aria-hidden="true">
+                    {it.food.name.uz.charAt(0)}
+                  </div>
                   <div>
                     <div className="name">{it.food.name.uz}</div>
                     <div className="meta">
@@ -137,7 +131,10 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
                     </div>
                     {open === it.k && <FoodSource food={it.food} />}
                   </div>
-                  <div className="kcal">{it.nutrition.kcal} kkal</div>
+                  <div className="kcal">
+                    {it.nutrition.kcal}
+                    <small>kkal</small>
+                  </div>
                 </li>
               );
             })}
@@ -145,6 +142,7 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
 
           {total.kcal > 0 && (
             <div className="burn">
+              <Flame />
               Shuncha kaloriyani yoqish uchun taxminan {minutesToBurn("walk", weightKg, total.kcal)} daqiqa piyoda yurish yoki{" "}
               {minutesToBurn("run", weightKg, total.kcal)} daqiqa yugurish kerak.
             </div>

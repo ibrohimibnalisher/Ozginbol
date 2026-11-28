@@ -15,7 +15,17 @@ export interface User {
   goal: Goal | null;
   rateKgPerWeek: number | null;
   targetWeightKg: number | null;
+  bodyFatPct: number | null;
   remind: number;
+}
+
+export interface Measurement {
+  day: string;
+  neckCm: number;
+  waistCm: number;
+  hipCm?: number;
+  weightKg: number;
+  bodyFatPct: number;
 }
 
 export interface Entry extends Macros {
@@ -55,6 +65,7 @@ export function profileOf(u: User): Profile | null {
     sex: u.sex, age: u.age, heightCm: u.heightCm, weightKg: u.weightKg, activity: u.activity, goal: u.goal,
     ...(u.rateKgPerWeek !== null ? { rateKgPerWeek: u.rateKgPerWeek } : {}),
     ...(u.targetWeightKg !== null ? { targetWeightKg: u.targetWeightKg } : {}),
+    ...(u.bodyFatPct !== null ? { bodyFatPct: u.bodyFatPct } : {}),
   };
 }
 
@@ -77,6 +88,10 @@ CREATE TABLE IF NOT EXISTS workouts (
   exercise_id TEXT NOT NULL, minutes REAL NOT NULL, kcal REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS custom_foods (user_id INTEGER NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, json TEXT NOT NULL, PRIMARY KEY (user_id, id));
+CREATE TABLE IF NOT EXISTS measurements (
+  user_id INTEGER NOT NULL, day TEXT NOT NULL, neck REAL NOT NULL, waist REAL NOT NULL, hip REAL, weight REAL NOT NULL, body_fat REAL NOT NULL,
+  PRIMARY KEY (user_id, day)
+);
 CREATE TABLE IF NOT EXISTS weights (user_id INTEGER NOT NULL, day TEXT NOT NULL, kg REAL NOT NULL, PRIMARY KEY (user_id, day));
 `;
 
@@ -95,6 +110,7 @@ function toUser(r: Row): User {
     goal: (r.goal as Goal) ?? null,
     rateKgPerWeek: (r.rate as number) ?? null,
     targetWeightKg: (r.target_weight as number) ?? null,
+    bodyFatPct: (r.body_fat as number) ?? null,
     remind: Number(r.remind ?? 1),
   };
 }
@@ -120,7 +136,7 @@ function toEntry(r: Row): Entry {
 
 const COLS: Record<string, string> = {
   name: "name", step: "step", sex: "sex", age: "age", heightCm: "height_cm", weightKg: "weight_kg",
-  activity: "activity", goal: "goal", remind: "remind", rateKgPerWeek: "rate", targetWeightKg: "target_weight",
+  activity: "activity", goal: "goal", remind: "remind", rateKgPerWeek: "rate", targetWeightKg: "target_weight", bodyFatPct: "body_fat",
 };
 
 /**
@@ -135,7 +151,7 @@ export class Store {
     this.db.exec("PRAGMA journal_mode = WAL;");
     this.db.exec(SCHEMA);
     // Columns added after the first release.
-    for (const col of ["rate REAL", "target_weight REAL"]) {
+    for (const col of ["rate REAL", "target_weight REAL", "body_fat REAL"]) {
       try {
         this.db.exec(`ALTER TABLE users ADD COLUMN ${col}`);
       } catch {
@@ -231,6 +247,29 @@ export class Store {
       .prepare("INSERT INTO weights (user_id, day, kg) VALUES (?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET kg = excluded.kg")
       .run(userId, day, kg);
     this.updateUser(userId, { weightKg: kg });
+  }
+
+  saveMeasurement(userId: number, m: Measurement): void {
+    this.db
+      .prepare(
+        "INSERT INTO measurements (user_id, day, neck, waist, hip, weight, body_fat) VALUES (?, ?, ?, ?, ?, ?, ?) " +
+          "ON CONFLICT(user_id, day) DO UPDATE SET neck = excluded.neck, waist = excluded.waist, hip = excluded.hip, weight = excluded.weight, body_fat = excluded.body_fat",
+      )
+      .run(userId, m.day, m.neckCm, m.waistCm, m.hipCm ?? null, m.weightKg, m.bodyFatPct);
+    this.updateUser(userId, { bodyFatPct: m.bodyFatPct });
+  }
+
+  measurements(userId: number, limit = 30): Measurement[] {
+    return (this.db.prepare("SELECT * FROM measurements WHERE user_id = ? ORDER BY day DESC LIMIT ?").all(userId, limit) as Row[])
+      .map((r) => ({
+        day: String(r.day),
+        neckCm: Number(r.neck),
+        waistCm: Number(r.waist),
+        hipCm: r.hip === null ? undefined : Number(r.hip),
+        weightKg: Number(r.weight),
+        bodyFatPct: Number(r.body_fat),
+      }))
+      .reverse();
   }
 
   weights(userId: number, limit = 30): { day: string; kg: number }[] {

@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Activity, Goal, Profile, Sex, Targets } from "@ozginbol/core";
 import { GOAL_INFO, computeTargets } from "@ozginbol/core";
+import { Dumbbell, Flame, Scale, TrendDown } from "./Icons";
+import { MacroBar, Ring } from "./Ring";
+
+const GOAL_ICON: Record<Goal, () => React.JSX.Element> = { cut: Flame, lose: TrendDown, maintain: Scale, gain: Dumbbell };
 
 const ACTIVITY_LABELS: Record<Activity, string> = {
   sedentary: "Kam harakat (ofis, 5 ming qadamdan kam)",
@@ -35,6 +39,7 @@ function addWeeks(weeks: number): string {
 
 export default function GoalCalculator({ initial, onSave }: { initial: Profile | null; targets: Targets | null; onSave: (p: Profile) => void }) {
   const [p, setP] = useState<Profile>(initial ?? DEFAULT);
+  const [saved, setSaved] = useState(false);
   useEffect(() => {
     if (initial) setP(initial);
   }, [initial]);
@@ -58,6 +63,7 @@ export default function GoalCalculator({ initial, onSave }: { initial: Profile |
             className={`mode ${p.goal === g ? "on" : ""}`}
             onClick={() => setP({ ...p, goal: g, rateKgPerWeek: GOAL_INFO[g].defaultRate })}
           >
+            <span className="ic">{GOAL_ICON[g]()}</span>
             <b>{GOAL_INFO[g].label}</b>
             <span>{GOAL_HINT[g]}</span>
           </button>
@@ -68,15 +74,21 @@ export default function GoalCalculator({ initial, onSave }: { initial: Profile |
         className="form"
         onSubmit={(e) => {
           e.preventDefault();
-          if (valid) onSave(p);
+          if (!valid) return;
+          onSave(p);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 1500);
         }}
       >
         <label>
           Jins
-          <select value={p.sex} onChange={(e) => setP({ ...p, sex: e.target.value as Sex })}>
-            <option value="male">Erkak</option>
-            <option value="female">Ayol</option>
-          </select>
+          <div className="seg" role="radiogroup" aria-label="Jins">
+            {(["male", "female"] as Sex[]).map((x) => (
+              <button type="button" key={x} role="radio" aria-checked={p.sex === x} className={p.sex === x ? "on" : ""} onClick={() => setP({ ...p, sex: x })}>
+                {x === "male" ? "Erkak" : "Ayol"}
+              </button>
+            ))}
+          </div>
         </label>
         <label>
           Yosh
@@ -122,34 +134,41 @@ export default function GoalCalculator({ initial, onSave }: { initial: Profile |
           Yog' foizi, %
           <input type="number" inputMode="decimal" value={p.bodyFatPct ?? ""} onChange={num("bodyFatPct")} placeholder="bilsangiz" step="0.5" />
         </label>
-        <div style={{ gridColumn: "1 / -1" }}>
+        <div className="full actions">
           <button className="btn" type="submit" disabled={!valid}>
-            Saqlash
+            {saved ? "Saqlandi ✓" : "Saqlash"}
           </button>
-          <span className="note" style={{ marginLeft: 12 }}>
+          <span className="note" style={{ margin: 0 }}>
             Natija yozgan zahoti yangilanadi. Saqlasangiz, kalkulyator shu me'yor bilan solishtiradi.
           </span>
         </div>
       </form>
 
       {t && (
-        <>
-          <div className="targets">
-            <div className="stat kcal">
-              <div className="v">{t.calories}</div>
-              <div className="l">kkal / kun</div>
+        <div className="result-card" style={{ marginTop: 22 }}>
+          <div className="summary" style={{ marginTop: 0 }}>
+            <Ring value={t.calories} max={t.calories} size={148} label={String(t.calories)} sub="kkal / kun" />
+            <div className="macros">
+              <MacroBar name={`Oqsil · ${Math.round(((t.protein * 4) / t.calories) * 100)}%`} cls="c-p" value={t.protein} />
+              <MacroBar name={`Yog' · ${Math.round(((t.fat * 9) / t.calories) * 100)}%`} cls="c-f" value={t.fat} />
+              <MacroBar name={`Uglevod · ${Math.round(((t.carbs * 4) / t.calories) * 100)}%`} cls="c-c" value={t.carbs} />
             </div>
-            <div className="stat p">
-              <div className="v">{t.protein} g</div>
-              <div className="l">oqsil · {Math.round(((t.protein * 4) / t.calories) * 100)}%</div>
+          </div>
+          <div className="kv">
+            <div>
+              <b>{t.bmr}</b>
+              <span>tinch holatda, kkal</span>
             </div>
-            <div className="stat f">
-              <div className="v">{t.fat} g</div>
-              <div className="l">yog' · {Math.round(((t.fat * 9) / t.calories) * 100)}%</div>
+            <div>
+              <b>{t.tdee}</b>
+              <span>faollik bilan sarf, kkal</span>
             </div>
-            <div className="stat c">
-              <div className="v">{t.carbs} g</div>
-              <div className="l">uglevod · {Math.round(((t.carbs * 4) / t.calories) * 100)}%</div>
+            <div>
+              <b>
+                {t.dailyDelta > 0 ? "+" : ""}
+                {t.dailyDelta}
+              </b>
+              <span>kunlik farq, kkal</span>
             </div>
           </div>
 
@@ -176,7 +195,7 @@ export default function GoalCalculator({ initial, onSave }: { initial: Profile |
               {(t.waterMl / 1000).toFixed(1)} l. Kletchatka: {t.fiber} g.
             </p>
           </details>
-        </>
+        </div>
       )}
     </div>
   );

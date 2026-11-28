@@ -103,3 +103,38 @@ describe("custom foods and recipes", () => {
     expect(parseCustomFoodLine("faqat nom")).toBeNull();
   });
 });
+
+import { bodyComposition, navyBodyFat, parseMeasurements, measurementError } from "../src";
+
+describe("body composition (US Navy)", () => {
+  it("matches the published formula for a man", () => {
+    const pct = navyBodyFat({ sex: "male", heightCm: 175, weightKg: 75, neckCm: 38, waistCm: 85 });
+    expect(pct).toBeCloseTo(16.9, 0);
+  });
+  it("matches the published formula for a woman", () => {
+    // 165 cm, neck 32, waist 72, hip 98 → ~27%
+    const pct = navyBodyFat({ sex: "female", heightCm: 165, weightKg: 62, neckCm: 32, waistCm: 72, hipCm: 98 });
+    expect(pct).toBeGreaterThan(24);
+    expect(pct).toBeLessThan(30);
+  });
+  it("derives masses, ratios and risks", () => {
+    const b = bodyComposition({ sex: "male", age: 30, heightCm: 175, weightKg: 90, neckCm: 40, waistCm: 104 });
+    expect(b.fatMassKg + b.leanMassKg).toBeCloseTo(90, 0);
+    expect(b.waistRisk).toBe("high");
+    expect(b.whtrRisk).toBe("increased");
+    expect(b.category).toBe("obese");
+    expect(b.bmiEstimatePct).toBeGreaterThan(20);
+    expect(b.steps.length).toBe(4);
+  });
+  it("rejects impossible input and requires hip for women", () => {
+    expect(measurementError({ sex: "female", heightCm: 165, weightKg: 60, neckCm: 32, waistCm: 72 })).toMatch(/son/);
+    expect(measurementError({ sex: "male", heightCm: 175, weightKg: 70, neckCm: 40, waistCm: 42 })).toBeTruthy();
+    expect(() => bodyComposition({ sex: "male", heightCm: 175, weightKg: 70, neckCm: 40, waistCm: 42 })).toThrow();
+  });
+  it("parses measurement text", () => {
+    expect(parseMeasurements("bo'yin 38, bel 85.5")).toEqual({ neckCm: 38, waistCm: 85.5 });
+    expect(parseMeasurements("шея 34 талия 70 бедра 96")).toEqual({ neckCm: 34, waistCm: 70, hipCm: 96 });
+    expect(parseMeasurements("38 85 96")).toEqual({ neckCm: 38, waistCm: 85, hipCm: 96 });
+    expect(parseMeasurements("bel 90 bo'yin 39 vazn 82")).toEqual({ neckCm: 39, waistCm: 90, weightKg: 82 });
+  });
+});

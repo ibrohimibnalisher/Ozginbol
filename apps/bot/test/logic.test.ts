@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getFood } from "@ozginbol/core";
 import { Store, shiftDay, tashkentDay } from "../src/db";
-import { findFood, handleCallback, handleText, myFoods, newFood, newRecipe, plan, startOnboarding, today, undo, water, week, weight, workout } from "../src/logic";
+import { findFood, handleCallback, measure, handleText, myFoods, newFood, newRecipe, plan, startOnboarding, today, undo, water, week, weight, workout } from "../src/logic";
 
 let store: Store;
 const ID = 42;
@@ -177,5 +177,40 @@ describe("goals, custom foods and sources", () => {
     expect(r.text).toContain("kichik 90 g");
     handleText(store, user(), "1 katta somsa");
     expect(handleCallback(store, user(), "src")!.text).toContain("Dumba");
+  });
+});
+
+describe("body measurements", () => {
+  it("shows instructions without numbers and asks for a profile first", () => {
+    store.ensureUser(ID, "Ali");
+    expect(measure(store, user(), "").text).toContain("/olcham bo'yin 38 bel 85");
+    expect(measure(store, user(), "bo'yin 38 bel 85").text).toContain("/maqsad");
+  });
+
+  it("computes body fat, stores history and switches targets to Katch-McArdle", () => {
+    onboard();
+    const before = user();
+    expect(before.bodyFatPct).toBeNull();
+    const r = measure(store, user(), "bo'yin 39 bel 95");
+    expect(r.text).toMatch(/Yog' foizi: <b>\d+(\.\d)?%<\/b>/);
+    expect(r.text).toContain("Katch-McArdle");
+    expect(user().bodyFatPct).toBeGreaterThan(15);
+    expect(store.measurements(ID)).toHaveLength(1);
+
+    // an earlier measurement makes the reply show the change
+    store.saveMeasurement(ID, { day: shiftDay(tashkentDay(), -7), neckCm: 39, waistCm: 98, weightKg: 87, bodyFatPct: 25 });
+    const r2 = measure(store, user(), "bo'yin 39 bel 94 vazn 84");
+    expect(r2.text).toContain("Oldingi o'lchovdan");
+    expect(r2.text).toContain("bel -4 sm");
+    expect(user().weightKg).toBe(84);
+    expect(measure(store, user(), "").text).toContain("Oxirgi o'lchovlar");
+  });
+
+  it("requires hip for women and rejects nonsense", () => {
+    store.ensureUser(ID, "Malika");
+    store.updateUser(ID, { sex: "female", age: 25, heightCm: 165, weightKg: 60 });
+    expect(measure(store, user(), "bo'yin 32 bel 72").text).toContain("son aylanasi");
+    expect(measure(store, user(), "bo'yin 32 bel 72 son 98").text).toContain("Yog' foizi");
+    expect(measure(store, user(), "bo'yin 60 bel 50 son 60").text).toContain("⚠️");
   });
 });
