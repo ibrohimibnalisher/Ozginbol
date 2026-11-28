@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { formatUnit, getFood } from "@ozginbol/core";
 import { Card, Icon, IconTile, MacroBar, Muted, Ring, Row, type IconName } from "../components/ui";
-import { MEALS, dayKey, shiftDay, streak, summarize, targetsOf, tips, type MealType } from "../diary";
+import { MEALS, MEAL_SHARE, dayKey, shiftDay, streak, summarize, targetsOf, tips, type MealType } from "../diary";
+import { FastingCard, MenuCta, ScoreCard, StepsCard } from "../components/TodayExtras";
 import { useDiary } from "../store";
 import { useTheme } from "../theme";
 
@@ -16,7 +17,7 @@ function dayTitle(day: string): string {
   return `${d}-${MONTHS[m - 1]}`;
 }
 
-export default function Today({ day, setDay, onAdd }: { day: string; setDay: (d: string) => void; onAdd: (meal: MealType) => void }) {
+export default function Today({ day, setDay, onAdd, onMenu }: { day: string; setDay: (d: string) => void; onAdd: (meal: MealType) => void; onMenu: () => void }) {
   const t = useTheme();
   const { state, dispatch } = useDiary();
   const [selected, setSelected] = useState<string | null>(null);
@@ -28,6 +29,7 @@ export default function Today({ day, setDay, onAdd }: { day: string; setDay: (d:
   const advice = tips(sum, tg);
   const isToday = day === dayKey();
 
+  const yesterday = summarize(state, shiftDay(day, -1));
   const MEAL_ICON: Record<MealType, IconName> = { breakfast: "sun", lunch: "bowl", dinner: "moon", snack: "apple" };
   const waterGoal = tg?.waterMl ?? 2000;
 
@@ -91,6 +93,8 @@ export default function Today({ day, setDay, onAdd }: { day: string; setDay: (d:
         </Card>
       )}
 
+      <ScoreCard day={day} isToday={isToday} />
+
       {advice.map((a) => (
         <Row key={a} style={{ backgroundColor: t.accentSoft, borderRadius: 18, padding: 14, gap: 12, alignItems: "flex-start" }}>
           <Icon name="bulb" size={20} color={t.accentStrong} />
@@ -110,7 +114,9 @@ export default function Today({ day, setDay, onAdd }: { day: string; setDay: (d:
                 </IconTile>
                 <View>
                   <Text style={{ color: t.text, fontSize: 17, fontWeight: "800" }}>{m.label}</Text>
-                  <Muted style={{ fontSize: 13 }}>{kcal > 0 ? `${Math.round(kcal)} kkal · ${items.length} ta` : "Hali yozilmagan"}</Muted>
+                  <Muted style={{ fontSize: 13 }}>
+                    {Math.round(kcal)} / {Math.round((tg?.calories ?? 2000) * MEAL_SHARE[m.id])} kkal
+                  </Muted>
                 </View>
               </Row>
               <Pressable
@@ -121,6 +127,18 @@ export default function Today({ day, setDay, onAdd }: { day: string; setDay: (d:
                 <Icon name="plus" size={20} color={t.accentInk} stroke={2.6} />
               </Pressable>
             </Row>
+            {items.length === 0 && yesterday.byMeal[m.id].length > 0 && (
+              <Pressable
+                onPress={() => dispatch({ type: "copyMeal", fromDay: shiftDay(day, -1), toDay: day, meal: m.id })}
+                style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: t.card2 }}
+              >
+                <Icon name="copy" size={16} color={t.accentStrong} />
+                <Text style={{ color: t.text, fontWeight: "700", flex: 1 }} numberOfLines={1}>
+                  Kechagidek: {yesterday.byMeal[m.id].map((e) => e.name).join(", ")}
+                </Text>
+                <Text style={{ color: t.muted, fontWeight: "700" }}>{Math.round(yesterday.byMeal[m.id].reduce((a, e) => a + e.kcal, 0))}</Text>
+              </Pressable>
+            )}
             {items.map((e) => (
               <Pressable key={e.id} onPress={() => setSelected(selected === e.id ? null : e.id)}>
                 <Row style={{ justifyContent: "space-between", paddingVertical: 12, borderTopWidth: 1, borderTopColor: t.border, marginTop: 12 }}>
@@ -141,9 +159,25 @@ export default function Today({ day, setDay, onAdd }: { day: string; setDay: (d:
                 </Row>
               </Pressable>
             ))}
+            {items.length > 1 && (
+              <Pressable
+                onPress={() => dispatch({ type: "saveMeal", name: `${m.label}: ${items[0]!.name}`, text: items.map((e) => e.input).join(", ") })}
+                style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}
+                hitSlop={6}
+              >
+                <Icon name="star" size={15} color={state.savedMeals.some((x) => x.text === items.map((e) => e.input).join(", ")) ? t.fat : t.faint} />
+                <Text style={{ color: t.muted, fontSize: 13, fontWeight: "700" }}>
+                  {state.savedMeals.some((x) => x.text === items.map((e) => e.input).join(", ")) ? "Sevimlilarda" : "Sevimli ovqatga saqlash"}
+                </Text>
+              </Pressable>
+            )}
           </Card>
         );
       })}
+
+      <StepsCard day={day} isToday={isToday} />
+      {isToday && <FastingCard />}
+      {isToday && <MenuCta onMenu={onMenu} />}
 
       <Card>
         <Row style={{ justifyContent: "space-between" }}>

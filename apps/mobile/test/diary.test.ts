@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCustomFood, parseMeal } from "@ozginbol/core";
 import { offToFood } from "../src/barcode";
-import { EMPTY, dayKey, frequentInputs, mealForHour, reducer, shiftDay, streak, summarize, targetsOf, tips } from "../src/diary";
+import { EMPTY, adaptive, dayKey, frequentInputs, habitStats, mealForHour, quality, reducer, shiftDay, streak, summarize, targetsOf, tips, toCsv } from "../src/diary";
 
 const profile = { sex: "male", age: 30, heightCm: 178, weightKg: 85, activity: "light", goal: "lose" } as const;
 const today = dayKey();
@@ -102,5 +102,64 @@ describe("body measurements", () => {
     expect(s.profile!.bodyFatPct).toBe(20.3);
     s = reducer(s, { type: "removeMeasure", day: dayKey() });
     expect(s.measurements).toHaveLength(1);
+  });
+});
+
+describe("habits and planning", () => {
+  const profile = { sex: "male" as const, age: 30, heightCm: 178, weightKg: 85, activity: "light" as const, goal: "lose" as const };
+  const today = dayKey();
+  const yest = shiftDay(today, -1);
+  const add = (s: typeof EMPTY, day: string, text: string, meal: "breakfast" | "lunch" = "lunch") =>
+    reducer(s, { type: "addItems", day, meal, items: parseMeal(text).items });
+
+  it("copies yesterday's meal into today", () => {
+    let s = reducer(EMPTY, { type: "setProfile", profile });
+    s = add(s, yest, "1 porsiya osh, 1 piyola choy");
+    s = reducer(s, { type: "copyMeal", fromDay: yest, toDay: today, meal: "lunch" });
+    const t = summarize(s, today);
+    expect(t.byMeal.lunch.map((e) => e.foodId)).toEqual(["osh", "choy"]);
+    expect(new Set(s.entries.map((e) => e.id)).size).toBe(s.entries.length);
+  });
+
+  it("saves favourite meals without duplicates", () => {
+    let s = reducer(EMPTY, { type: "saveMeal", name: "Tushlik", text: "1 porsiya osh, achchiq-chuchuk" });
+    s = reducer(s, { type: "saveMeal", name: "Yana", text: "1 porsiya osh, achchiq-chuchuk" });
+    expect(s.savedMeals).toHaveLength(1);
+    s = reducer(s, { type: "removeSavedMeal", id: s.savedMeals[0]!.id });
+    expect(s.savedMeals).toHaveLength(0);
+  });
+
+  it("runs a fast and counts it for achievements", () => {
+    let s = reducer(EMPTY, { type: "fastStart", at: 0, hours: 16 });
+    expect(s.fasting.active?.hours).toBe(16);
+    expect(s.settings.fastingHours).toBe(16);
+    s = reducer(s, { type: "fastEnd", at: 17 * 3600000 });
+    expect(s.fasting.active).toBeNull();
+    expect(habitStats(s).fastsCompleted).toBe(1);
+  });
+
+  it("scores the day, tracks streaks and exports CSV", () => {
+    let s = reducer(EMPTY, { type: "setProfile", profile });
+    s = add(s, yest, "2 ta tuxum", "breakfast");
+    s = add(s, today, "1 porsiya osh, 1 olma");
+    s = reducer(s, { type: "steps", day: today, steps: 8432 });
+    expect(s.steps[today]).toBe(8432);
+    expect(quality(s, today)!.score).toBeGreaterThan(0);
+    expect(quality(s, shiftDay(today, -5))).toBeNull();
+    const h = habitStats(s, today);
+    expect(h.bestStreak).toBe(2);
+    const csv = toCsv(s).split("\n");
+    expect(csv[0]).toContain("Kkal");
+    expect(csv).toHaveLength(4);
+    expect(adaptive(s)).toBeNull();
+  });
+
+  it("loads old saves without the new fields", () => {
+    const old = { ...EMPTY } as Partial<typeof EMPTY>;
+    delete old.settings;
+    delete old.fasting;
+    const s = reducer(EMPTY, { type: "load", state: old as typeof EMPTY });
+    expect(s.settings.stepGoal).toBe(10000);
+    expect(s.fasting.history).toEqual([]);
   });
 });

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Svg, { Circle, Polyline } from "react-native-svg";
-import { FAT_CATEGORY_LABELS, fatCategory } from "@ozginbol/core";
+import { FAT_CATEGORY_LABELS, achievements, fatCategory, weightTrend } from "@ozginbol/core";
 import { Button, Card, H1, H2, Icon, IconTile, Input, Muted, Row } from "../components/ui";
-import { dayKey, shiftDay, summarize, targetsOf } from "../diary";
+import { adaptive, dayKey, habitStats, shiftDay, summarize, targetsOf } from "../diary";
 import { useDiary } from "../store";
 import { useTheme } from "../theme";
 
@@ -33,6 +33,19 @@ export default function Progress({ onBody }: { onBody: () => void }) {
     return [px, py] as const;
   });
   const lastM = state.measurements[state.measurements.length - 1];
+  const ad = adaptive(state);
+  const badges = achievements(habitStats(state));
+  const earned = badges.filter((b) => b.earned).length;
+  const trend = weightTrend(weights);
+  const tPts = trend.length > 1 && weights.length > 1
+    ? trend.map((x) => {
+        const t0 = Date.parse(weights[0]!.day);
+        const t1 = Date.parse(weights[weights.length - 1]!.day);
+        const px = ((Date.parse(x.day) - t0) / Math.max(1, t1 - t0)) * (W - 20) + 10;
+        const py = wMax === wMin ? H / 2 : H - 10 - ((x.kg - wMin) / (wMax - wMin)) * (H - 20);
+        return `${px},${py}`;
+      })
+    : [];
   const first = weights[0];
   const last = weights[weights.length - 1];
 
@@ -76,6 +89,56 @@ export default function Progress({ onBody }: { onBody: () => void }) {
         </Row>
       </Card>
 
+      <Card>
+        <H2>Haqiqiy sarfingiz</H2>
+        {ad ? (
+          <>
+            <Text style={{ color: t.text, fontSize: 30, fontWeight: "800", letterSpacing: -0.8 }}>
+              {ad.tdee} <Text style={{ color: t.faint, fontSize: 14, fontWeight: "600" }}>kkal / kun</Text>
+            </Text>
+            <Muted style={{ fontSize: 13, marginTop: 4 }}>
+              {ad.days} kunda o'rtacha {ad.avgIntake} kkal yedingiz, trend vazn {ad.trendChangeKg > 0 ? "+" : ""}
+              {ad.trendChangeKg} kg o'zgardi. Formula bo'yicha: {tg?.tdee} kkal. Ishonch:{" "}
+              {ad.confidence === "high" ? "yuqori" : ad.confidence === "medium" ? "o'rtacha" : "past"}.
+            </Muted>
+            {tg && Math.abs(ad.tdee - tg.tdee) > 150 && (
+              <Text style={{ color: t.text, fontSize: 13, fontWeight: "700", marginTop: 8 }}>
+                Tavsiya: me'yorni {ad.tdee + tg.dailyDelta} kkal qiling (sarfingiz + maqsad farqi {tg.dailyDelta}).
+              </Text>
+            )}
+          </>
+        ) : (
+          <Muted>
+            Kamida 10 kun ovqat va 2 hafta davomida vazn yozilsa, tarozi va kundalikdan haqiqiy kaloriya sarfingizni hisoblaymiz (formula
+            taxminidan aniqroq).
+          </Muted>
+        )}
+      </Card>
+
+      <Card>
+        <Row style={{ justifyContent: "space-between", marginBottom: 10 }}>
+          <H2 style={{ marginBottom: 0 }}>Yutuqlar</H2>
+          <Muted>
+            {earned} / {badges.length}
+          </Muted>
+        </Row>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {badges.map((b) => (
+            <View key={b.id} style={{ width: "31%", flexGrow: 1, backgroundColor: b.earned ? t.accentSoft : t.card2, borderRadius: 16, padding: 10, alignItems: "center", opacity: b.earned ? 1 : 0.75 }}>
+              <Text style={{ fontSize: 26, opacity: b.earned ? 1 : 0.35 }}>{b.icon}</Text>
+              <Text style={{ color: t.text, fontSize: 12, fontWeight: "800", textAlign: "center", marginTop: 4 }} numberOfLines={2}>
+                {b.title}
+              </Text>
+              {!b.earned && (
+                <View style={{ alignSelf: "stretch", height: 4, borderRadius: 2, backgroundColor: t.card3, marginTop: 6, overflow: "hidden" }}>
+                  <View style={{ width: `${b.progress * 100}%`, height: 4, backgroundColor: t.accent }} />
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      </Card>
+
       <Pressable onPress={onBody} accessibilityRole="button">
         <Card>
           <Row style={{ gap: 12 }}>
@@ -100,11 +163,12 @@ export default function Progress({ onBody }: { onBody: () => void }) {
         {weights.length > 0 ? (
           <>
             <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
-              {pts.length > 1 && <Polyline points={pts.map((p) => p.join(",")).join(" ")} fill="none" stroke={t.accent} strokeWidth={3} />}
+              {tPts.length > 1 && <Polyline points={tPts.join(" ")} fill="none" stroke={t.accent} strokeWidth={3} strokeLinejoin="round" />}
               {pts.map(([x, y], i) => (
-                <Circle key={i} cx={x} cy={y} r={4} fill={t.accent} />
+                <Circle key={i} cx={x} cy={y} r={3.5} fill={t.card} stroke={t.faint} strokeWidth={1.5} />
               ))}
             </Svg>
+            <Muted style={{ fontSize: 12 }}>Chiziq: kunlik suv tebranishlarini tekislagan haqiqiy trend. Nuqtalar: tarozi.</Muted>
             {first && last && (
               <Muted>
                 {first.kg} → {last.kg} kg ({last.kg - first.kg > 0 ? "+" : ""}

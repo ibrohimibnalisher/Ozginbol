@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS workouts (
   exercise_id TEXT NOT NULL, minutes REAL NOT NULL, kcal REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS custom_foods (user_id INTEGER NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, json TEXT NOT NULL, PRIMARY KEY (user_id, id));
+CREATE TABLE IF NOT EXISTS fasts (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, started_at INTEGER NOT NULL, hours REAL NOT NULL, ended_at INTEGER);
 CREATE TABLE IF NOT EXISTS measurements (
   user_id INTEGER NOT NULL, day TEXT NOT NULL, neck REAL NOT NULL, waist REAL NOT NULL, hip REAL, weight REAL NOT NULL, body_fat REAL NOT NULL,
   PRIMARY KEY (user_id, day)
@@ -247,6 +248,67 @@ export class Store {
       .prepare("INSERT INTO weights (user_id, day, kg) VALUES (?, ?, ?) ON CONFLICT(user_id, day) DO UPDATE SET kg = excluded.kg")
       .run(userId, day, kg);
     this.updateUser(userId, { weightKg: kg });
+  }
+
+  activeFast(userId: number): { id: number; startedAt: number; hours: number } | null {
+    const r = this.db.prepare("SELECT * FROM fasts WHERE user_id = ? AND ended_at IS NULL ORDER BY id DESC LIMIT 1").get(userId) as Row | undefined;
+    return r ? { id: Number(r.id), startedAt: Number(r.started_at), hours: Number(r.hours) } : null;
+  }
+
+  startFast(userId: number, hours: number, at = Date.now()): void {
+    this.db.prepare("UPDATE fasts SET ended_at = ? WHERE user_id = ? AND ended_at IS NULL").run(at, userId);
+    this.db.prepare("INSERT INTO fasts (user_id, started_at, hours) VALUES (?, ?, ?)").run(userId, at, hours);
+  }
+
+  endFast(userId: number, at = Date.now()): { startedAt: number; hours: number; endedAt: number } | null {
+    const f = this.activeFast(userId);
+    if (!f) return null;
+    this.db.prepare("UPDATE fasts SET ended_at = ? WHERE id = ?").run(at, f.id);
+    return { startedAt: f.startedAt, hours: f.hours, endedAt: at };
+  }
+
+  completedFasts(userId: number): number {
+    return Number((this.db.prepare("SELECT COUNT(*) AS n FROM fasts WHERE user_id = ? AND ended_at IS NOT NULL AND ended_at - started_at >= hours * 3600000").get(userId) as Row).n);
+  }
+
+  /** Recent distinct meals (one per message the user sent), newest first. */
+  recentMeals(userId: number, limit = 6): { meal: string; text: string; kcal: number }[] {
+    const rows = this.db
+      .prepare("SELECT meal, group_concat(input, ', ') AS text, SUM(kcal) AS kcal, MAX(id) AS last FROM entries WHERE user_id = ? GROUP BY meal ORDER BY last DESC LIMIT 40")
+      .all(userId) as Row[];
+    const seen = new Set<string>();
+    const out: { meal: string; text: string; kcal: number }[] = [];
+    for (const r of rows) {
+      const text = String(r.text);
+      if (seen.has(text)) continue;
+      seen.add(text);
+      out.push({ meal: String(r.meal), text, kcal: Math.round(Number(r.kcal)) });
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+
+  repeatMeal(userId: number, meal: string, day = tashkentDay()): Entry[] {
+    const rows = (this.db.prepare("SELECT * FROM entries WHERE user_id = ? AND meal = ? ORDER BY id").all(userId, meal) as Row[]).map(toEntry);
+    if (!rows.length) return [];
+    const now = Date.now();
+    const group = `${now}-${Math.random().toString(36).slice(2, 8)}`;
+    const st = this.db.prepare(
+      `INSERT INTO entries (user_id, day, at, input, food_id, quantity, unit, grams, kcal, protein, fat, carbs, fiber, meal)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    for (const e of rows) st.run(userId, day, now, e.input, e.foodId, e.quantity, e.unit, e.grams, e.kcal, e.protein, e.fat, e.carbs, e.fiber ?? 0, group);
+    return rows;
+  }
+
+  allEntries(userId: number): Entry[] {
+    return (this.db.prepare("SELECT * FROM entries WHERE user_id = ? ORDER BY day, id").all(userId) as Row[]).map(toEntry);
+  }
+
+  dailyIntake(userId: number, days = 60): { day: string; kcal: number }[] {
+    return (this.db.prepare("SELECT day, SUM(kcal) AS kcal FROM entries WHERE user_id = ? GROUP BY day ORDER BY day DESC LIMIT ?").all(userId, days) as Row[])
+      .map((r) => ({ day: String(r.day), kcal: Number(r.kcal) }))
+      .reverse();
   }
 
   saveMeasurement(userId: number, m: Measurement): void {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { EXERCISES, caloriesBurned, trainingPlan } from "@ozginbol/core";
-import { Button, Card, Chip, H1, H2, Input, Muted, Row } from "../components/ui";
+import { EXERCISES, EXERCISE_LIBRARY, caloriesBurned, trainingPlan } from "@ozginbol/core";
+import { Button, Card, Chip, H1, H2, Input, Muted, Row, Segmented } from "../components/ui";
 import { dayKey } from "../diary";
 import { useDiary } from "../store";
 import { useTheme } from "../theme";
@@ -11,6 +11,8 @@ export default function Training() {
   const { state, dispatch } = useDiary();
   const [ex, setEx] = useState("walk");
   const [min, setMin] = useState("30");
+  const [open, setOpen] = useState<string | null>(null);
+  const [place, setPlace] = useState<"uy" | "zal">("uy");
   const today = dayKey();
   const todays = state.workouts.filter((w) => w.day === today);
   const minutes = parseInt(min, 10);
@@ -72,6 +74,38 @@ export default function Training() {
           ))}
         </View>
         <Muted style={{ marginTop: 12, fontSize: 12 }}>Sog'lig'ingizda muammo bo'lsa, boshlashdan oldin shifokor bilan maslahatlashing.</Muted>
+      </Card>
+      <Card>
+        <H2>Mashqlar texnikasi</H2>
+        <Segmented value={place} onChange={setPlace} options={[{ id: "uy", label: "Uyda" }, { id: "zal", label: "Zalda" }]} />
+        {EXERCISE_LIBRARY.filter((e) => e.equipment === place).map((e, i) => (
+          <Pressable key={e.id} onPress={() => setOpen(open === e.id ? null : e.id)} style={{ paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderTopColor: t.border, marginTop: i ? 0 : 8 }}>
+            <Row style={{ justifyContent: "space-between" }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: t.text, fontWeight: "800", fontSize: 15 }}>{e.name}</Text>
+                <Muted style={{ fontSize: 12 }}>
+                  {e.muscles} · {e.level}
+                </Muted>
+              </View>
+              <Text style={{ color: t.faint, fontSize: 18 }}>{open === e.id ? "−" : "+"}</Text>
+            </Row>
+            {open === e.id && (
+              <View style={{ marginTop: 8, gap: 4 }}>
+                {e.steps.map((st, k) => (
+                  <Text key={st} style={{ color: t.text, fontSize: 14, lineHeight: 20 }}>
+                    {k + 1}. {st}
+                  </Text>
+                ))}
+                <Text style={{ color: t.warn, fontSize: 13, fontWeight: "800", marginTop: 6 }}>Ko'p uchraydigan xatolar</Text>
+                {e.mistakes.map((m) => (
+                  <Muted key={m} style={{ fontSize: 13 }}>
+                    ✕ {m}
+                  </Muted>
+                ))}
+              </View>
+            )}
+          </Pressable>
+        ))}
       </Card>
     </ScrollView>
   );

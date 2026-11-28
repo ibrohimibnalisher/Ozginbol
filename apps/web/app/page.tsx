@@ -15,6 +15,7 @@ export default function Page() {
           <nav className="links">
             <a href="#hisoblash">Kaloriya</a>
             <a href="#maqsad">Kunlik me'yor</a>
+            <a href="#menyu">Menyu</a>
             <a href="#tana">Yog' foizi</a>
             <a href="#mening">Mahsulotlarim</a>
             <a href="#taomlar">Taomlar</a>

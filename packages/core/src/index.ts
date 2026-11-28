@@ -13,3 +13,9 @@ export { createCustomFood, createRecipeFood, parseCustomFoodLine, validMacros } 
 export type { CustomFoodInput, RecipeInput } from "./custom";
 export { sourceText, recipeLines, SIZE_LABELS } from "./sources";
 export * from "./body";
+export * from "./fasting";
+export * from "./adaptive";
+export * from "./menu";
+export * from "./achievements";
+export * from "./score";
+export * from "./library";

@@ -389,3 +389,14 @@ footer .logo { color: var(--text); font-size: 17px; margin-bottom: 8px; }
   table.foods .hide-sm { display: none; }
   .cta-band { padding: 22px; }
 }
+
+/* ── Menu planner ───────────────────────────── */
+.menu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+.menu-meal { background: var(--surface-2); border-radius: var(--r); padding: 14px; }
+.menu-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.menu-head span { font-weight: 800; font-variant-numeric: tabular-nums; }
+.menu-meal ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 14px; }
+.menu-meal li { display: flex; justify-content: space-between; gap: 8px; }
+.menu-meal li span:last-child { color: var(--muted); white-space: nowrap; }
+@media (max-width: 960px) { .menu-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .menu-grid { grid-template-columns: 1fr; } }

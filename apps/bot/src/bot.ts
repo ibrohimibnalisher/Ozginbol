@@ -1,8 +1,8 @@
-import { Bot, InlineKeyboard, type Context } from "grammy";
+import { Bot, InlineKeyboard, InputFile, type Context } from "grammy";
 import type { Store } from "./db";
 import { tashkentDay } from "./db";
 import {
-  HELP, findFood, measure, handleCallback, myFoods, newFood, newRecipe, handleText, plan, reminderFor, startOnboarding, today, toggleReminder,
+  HELP, exportCsv, fast, findFood, measure, menu, repeatList, handleCallback, myFoods, newFood, newRecipe, handleText, plan, reminderFor, startOnboarding, today, toggleReminder,
   undo, water, week, weight, workout, type Reply,
 } from "./logic";
 
@@ -40,6 +40,15 @@ export function createBot(token: string, store: Store): Bot {
   bot.command("suv", (ctx) => send(ctx, water(store, userOf(ctx), Number(ctx.match) || 250)));
   bot.command("vazn", (ctx) => send(ctx, weight(store, userOf(ctx), ctx.match)));
   bot.command(["olcham", "olchov"], (ctx) => send(ctx, measure(store, userOf(ctx), ctx.match)));
+  bot.command(["ochlik", "fasting"], (ctx) => send(ctx, fast(store, userOf(ctx), ctx.match)));
+  bot.command(["menyu", "menu"], (ctx) => send(ctx, menu(store, userOf(ctx))));
+  bot.command(["takror", "yana"], (ctx) => send(ctx, repeatList(store, userOf(ctx))));
+  bot.command("eksport", async (ctx) => {
+    const u = userOf(ctx);
+    const csv = exportCsv(store, u);
+    if (csv.split("\n").length < 2) return send(ctx, { text: "Kundalik bo'sh." });
+    await ctx.replyWithDocument(new InputFile(Buffer.from("\ufeff" + csv, "utf8"), `ozginbol-${tashkentDay()}.csv`), { caption: "Kundalik (Excel'da ochiladi)" });
+  });
   bot.command("mashq", (ctx) => send(ctx, workout(store, userOf(ctx), ctx.match)));
   bot.command("mashqlar", (ctx) => send(ctx, plan(userOf(ctx))));
   bot.command(["taom", "manba"], (ctx) => send(ctx, findFood(store, userOf(ctx), ctx.match)));

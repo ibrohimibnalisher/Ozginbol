@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getFood } from "@ozginbol/core";
+import { getFood, parseMeal } from "@ozginbol/core";
+const parseMealItems = (t: string) => parseMeal(t).items;
 import { Store, shiftDay, tashkentDay } from "../src/db";
-import { findFood, handleCallback, measure, handleText, myFoods, newFood, newRecipe, plan, startOnboarding, today, undo, water, week, weight, workout } from "../src/logic";
+import { exportCsv, fast, findFood, handleCallback, measure, menu, repeatList, handleText, myFoods, newFood, newRecipe, plan, startOnboarding, today, undo, water, week, weight, workout } from "../src/logic";
 
 let store: Store;
 const ID = 42;
@@ -212,5 +213,54 @@ describe("body measurements", () => {
     expect(measure(store, user(), "bo'yin 32 bel 72").text).toContain("son aylanasi");
     expect(measure(store, user(), "bo'yin 32 bel 72 son 98").text).toContain("Yog' foizi");
     expect(measure(store, user(), "bo'yin 60 bel 50 son 60").text).toContain("⚠️");
+  });
+});
+
+describe("planning and habits", () => {
+  it("runs a fasting timer with status and stop", () => {
+    store.ensureUser(ID, "Ali");
+    expect(fast(store, user(), "").buttons?.flat().map((b) => b.data)).toContain("fast:16");
+    expect(fast(store, user(), "16").text).toContain("16 soatlik ochlik boshlandi");
+    expect(fast(store, user(), "").text).toContain("Ochlik:");
+    store.startFast(ID, 16, Date.now() - 17 * 3600_000);
+    expect(fast(store, user(), "stop").text).toContain("Ochlik yakunlandi");
+    expect(store.completedFasts(ID)).toBe(1);
+    expect(fast(store, user(), "stop").text).toContain("Faol ochlik yo'q");
+    expect(handleCallback(store, user(), "fast:18")!.text).toContain("18 soatlik");
+    expect(fast(store, user(), "40").text).toContain("12 dan 24");
+  });
+
+  it("builds a menu, offers another and adds it to the diary", () => {
+    onboard();
+    const r = menu(store, user(), 5);
+    expect(r.text).toContain("Nonushta");
+    expect(r.buttons![0]!.map((b) => b.data)).toEqual(["menu:next:5", "menu:add:5"]);
+    expect(handleCallback(store, user(), "menu:next:5")!.buttons![0]![0]!.data).toBe("menu:next:6");
+    handleCallback(store, user(), "menu:add:5");
+    expect(store.day(ID).entries.length).toBeGreaterThan(4);
+  });
+
+  it("repeats a recent meal and shows a day score", () => {
+    onboard();
+    handleText(store, user(), "1 porsiya osh, 1 olma");
+    const list = repeatList(store, user());
+    const data = list.buttons![0]![0]!.data;
+    expect(data.startsWith("rep:")).toBe(true);
+    handleCallback(store, user(), data);
+    expect(store.day(ID).entries.filter((e) => e.foodId === "osh")).toHaveLength(2);
+    expect(today(store, user()).text).toContain("Kun bahosi");
+  });
+
+  it("exports CSV and reports adaptive TDEE once there is enough data", () => {
+    onboard();
+    for (let i = 0; i < 30; i++) {
+      const day = shiftDay(tashkentDay(), -i);
+      store.addEntries(ID, parseMealItems("1 porsiya osh, 2 ta somsa, 1 kosa lag'mon, 1 bo'lak non"), day);
+      store.setWeight(ID, 85 - (30 - i) * 0.05, day);
+    }
+    expect(week(store, user()).text).toContain("Haqiqiy sarfingiz");
+    const csv = exportCsv(store, user()).split("\n");
+    expect(csv[0]).toContain("Kkal");
+    expect(csv.length).toBeGreaterThan(100);
   });
 });

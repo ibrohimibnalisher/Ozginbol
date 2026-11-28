@@ -8,6 +8,7 @@ import { useTheme } from "./theme";
 import { Icon, type IconName } from "./components/ui";
 import AddFood from "./screens/AddFood";
 import Body from "./screens/Body";
+import Menu from "./screens/Menu";
 import MyFoods from "./screens/MyFoods";
 import Onboarding from "./screens/Onboarding";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -34,6 +35,7 @@ function Shell() {
   const [adding, setAdding] = useState<MealType | null>(null);
   const [myFoods, setMyFoods] = useState(false);
   const [body, setBody] = useState(false);
+  const [menu, setMenu] = useState(false);
 
   if (!ready) {
     return (
@@ -44,10 +46,11 @@ function Shell() {
   }
   if (!state.profile) return <Onboarding onDone={(p) => dispatch({ type: "setProfile", profile: p })} />;
 
-  const on = (id: string) => tab === id && !adding && !myFoods && !body;
+  const on = (id: string) => tab === id && !adding && !myFoods && !body && !menu;
   const openAdd = (meal?: MealType) => {
     setMyFoods(false);
     setBody(false);
+    setMenu(false);
     setTab("today");
     setAdding(meal ?? mealForHour(new Date().getHours()));
   };
@@ -55,14 +58,16 @@ function Shell() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={{ flex: 1 }}>
-        {body ? (
+        {menu ? (
+          <Menu day={day} onClose={() => setMenu(false)} />
+        ) : body ? (
           <Body onClose={() => setBody(false)} />
         ) : myFoods ? (
           <MyFoods onClose={() => setMyFoods(false)} />
         ) : adding ? (
           <AddFood day={day} meal={adding} onClose={() => setAdding(null)} onMyFoods={() => setMyFoods(true)} />
         ) : tab === "today" ? (
-          <Today day={day} setDay={setDay} onAdd={openAdd} />
+          <Today day={day} setDay={setDay} onAdd={openAdd} onMenu={() => setMenu(true)} />
         ) : tab === "progress" ? (
           <Progress onBody={() => setBody(true)} />
         ) : tab === "training" ? (
@@ -118,6 +123,7 @@ function Shell() {
                 setAdding(null);
                 setMyFoods(false);
                 setBody(false);
+                setMenu(false);
                 setTab(x.id as Tab);
               }}
               style={{ flex: 1, alignItems: "center", paddingVertical: 4 }}

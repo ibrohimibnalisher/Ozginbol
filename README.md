@@ -25,7 +25,7 @@ npm run dev:web   # http://localhost:3000
 2. `apps/bot/.env.example` dan nusxa olib `apps/bot/.env` yarating, `BOT_TOKEN` ni yozing.
 3. `cd apps/bot && node --env-file=.env --import tsx src/index.ts` (yoki `BOT_TOKEN=... npm run dev:bot`).
 
-Bot buyruqlari: /bugun, /hafta, /ochir, /suv, /mashq, /vazn, /olcham, /maqsad, /mashqlar, /taom (yoki /manba), /yangi, /retsept, /mening, /eslatma.
+Bot buyruqlari: /bugun, /hafta, /ochir, /suv, /mashq, /vazn, /olcham, /menyu, /ochlik, /takror, /eksport, /maqsad, /mashqlar, /taom (yoki /manba), /yangi, /retsept, /mening, /eslatma.
 
 - `/yangi Agusha tvorog, 159, 18, 9, 2` o'z mahsulotini qo'shadi (100 g uchun kkal, oqsil, yog', uglevod; oxiriga `dona 100` qo'shsa 1 dona og'irligi).
 - `/retsept Uy oshi: 1 kg guruch, 1 kg mol go'shti, 250 g yog' | 4500 | 12` retseptni masalliqlardan hisoblaydi (tayyor og'irlik va porsiya ixtiyoriy).
@@ -81,3 +81,13 @@ Natijadan yog' va yog'siz massa, ACE toifasi, bel ÷ bo'y nisbati (0.5 dan yuqor
 ## Dizayn
 
 Website va ilova bitta rang tizimidan foydalanadi (`apps/web/app/globals.css` va `apps/mobile/src/theme.ts`): yashil brend rangi, oqsil/yog'/uglevod uchun doimiy ranglar, kunduzgi va tungi rejim. Websiteda Manrope shrifti.
+
+## Rejalashtirish va odatlar
+
+- **Menyu generatori** (`menu.ts`): o'zbek taomlaridan kunlik menyu, kaloriya ±5% ichida, maqsadga qarab oqsilga ustunlik; porsiyalar 0.7-1.5× oralig'ida moslanadi.
+- **Interval ochlik** (`fasting.ts`): 12:12 dan 20:4 gacha, bosqichlar, tugash vaqti (ilovada bildirishnoma).
+- **Moslashuvchan TDEE** (`adaptive.ts`): vazn trendi (eksponensial tekislash) va kundalikdan haqiqiy sarf: o'rtacha iste'mol − trend o'zgarishi × 7700 ÷ kunlar.
+- **Kun bahosi** (`score.ts`): kaloriya, oqsil, yog', meva/sabzavot va shirinlik ulushi, suv bo'yicha 0-100 va A-E.
+- **Yutuqlar** (`achievements.ts`): 15 ta odat nishoni.
+- **Mashqlar texnikasi** (`library.ts`): uy va zal mashqlari, qadamlar va ko'p uchraydigan xatolar.
+- Ilovada: qadam hisoblagich (expo-sensors), ovqat va suv eslatmalari (expo-notifications), kechagi ovqatni takrorlash, sevimli ovqatlar, har ovqat uchun kaloriya limiti, CSV eksport.

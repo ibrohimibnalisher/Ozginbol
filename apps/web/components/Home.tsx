@@ -8,6 +8,7 @@ import GoalCalculator from "./GoalCalculator";
 import BodyCalculator, { type BodyEntry } from "./BodyCalculator";
 import FoodTable from "./FoodTable";
 import MyFoods from "./MyFoods";
+import MenuPlanner from "./MenuPlanner";
 import { Send } from "./Icons";
 
 const PROFILE_KEY = "ozginbol.profile.v1";
@@ -114,6 +115,15 @@ export default function Home({ foodCount }: { foodCount: number }) {
             sub="Sushka, ozish, vaznni saqlash yoki massa nabor. Maqsadingizni tanlang: kaloriya, oqsil, yog' va uglevodni bosqichma-bosqich hisoblab ko'rsatamiz."
           />
           <GoalCalculator initial={profile} targets={targets} onSave={saveProfile} />
+        </section>
+
+        <section className="block" id="menyu">
+          <Head
+            tag="Ovqatlanish rejasi"
+            title="Bugungi menyu"
+            sub="Me'yoringizga mos, o'zbek taomlaridan iborat kunlik menyu. Yoqmasa, boshqa variantini oling."
+          />
+          <MenuPlanner targets={targets} profile={profile} />
         </section>
 
         <section className="block" id="tana">

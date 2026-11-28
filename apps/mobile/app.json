@@ -12,7 +12,10 @@
     },
     "android": {
       "package": "uz.ozginbol.app",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.ACTIVITY_RECOGNITION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -25,7 +28,14 @@
           "cameraPermission": "Mahsulot shtrix-kodini skanerlash uchun kamera kerak.",
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Qadamlaringizni hisoblash uchun harakat ma'lumoti kerak."
+        }
+      ],
+      "expo-notifications"
     ]
   }
 }

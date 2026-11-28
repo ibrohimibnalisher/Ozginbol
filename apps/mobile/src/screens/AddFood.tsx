@@ -136,6 +136,9 @@ export default function AddFood({ day, meal: initialMeal, onClose, onMyFoods }: 
       <View>
         <Text style={{ color: t.muted, marginBottom: 8 }}>Tez qo'shish</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+          {state.savedMeals.map((m) => (
+            <Chip key={m.id} label={`★ ${m.name}`} onPress={() => append(m.text)} />
+          ))}
           {state.customFoods.slice(-4).map((f) => (
             <Chip key={f.id} label={`⭐ ${f.name.uz}`} onPress={() => append(f.portions.dona ? `1 ta ${f.name.uz}` : `100 g ${f.name.uz}`)} />
           ))}

@@ -1,6 +1,6 @@
 import type { Activity, Goal, Sex } from "@ozginbol/core";
 import {
-  FAT_CATEGORY_LABELS, GOAL_INFO, MEASURE_TIPS, RISK_LABELS, bodyComposition, caloriesBurned, measurementError, parseMeasurements, computeTargets, createCustomFood, createRecipeFood, formatUnit, getFood, parseCustomFoodLine,
+  FASTING_PLANS, FASTING_WARNING, FAT_CATEGORY_LABELS, GOAL_INFO, MENU_MEAL_LABELS, adaptiveTdee, dayScore, fastingStatus, formatDuration, generateMenu, menuLine, MEASURE_TIPS, RISK_LABELS, bodyComposition, caloriesBurned, measurementError, parseMeasurements, computeTargets, createCustomFood, createRecipeFood, formatUnit, getFood, parseCustomFoodLine,
   parseExercise, parseMeal, recipeLines, searchFoods, sourceText, trainingPlan,
 } from "@ozginbol/core";
 import type { Food } from "@ozginbol/core";
@@ -70,6 +70,12 @@ export function startOnboarding(store: Store, user: User): Reply {
 
 /** Inline-button presses during onboarding and elsewhere. */
 export function handleCallback(store: Store, user: User, data: string): Reply | null {
+  if (data.startsWith("menu:")) {
+    const [, action, seed] = data.split(":");
+    return action === "add" ? addMenu(store, user, Number(seed)) : menu(store, user, Number(seed) + 1);
+  }
+  if (data.startsWith("rep:")) return repeatMeal(store, user, data.slice(4));
+  if (data.startsWith("fast:")) return fast(store, user, data.slice(5));
   const [kind, value] = data.split(":") as [string, string | undefined];
   if (kind === "sex" && value) {
     store.updateUser(user.id, { sex: value as Sex, step: "age" });
@@ -153,16 +159,126 @@ function targetsFor(user: User) {
   return p ? computeTargets(p) : null;
 }
 
+function scoreLine(store: Store, u: User): string {
+  const t = targetsFor(u);
+  const d = store.day(u.id);
+  if (!t || !d.entries.length) return "";
+  const cat = (id: string) => getFood(id)?.category;
+  const q = dayScore(d.food, t, {
+    burned: d.burned,
+    waterMl: d.waterMl,
+    plantsKcal: d.entries.filter((e) => cat(e.foodId) === "meva" || cat(e.foodId) === "sabzavot").reduce((a, e) => a + e.kcal, 0),
+    sweetsKcal: d.entries.filter((e) => cat(e.foodId) === "shirinlik" || cat(e.foodId) === "fastfud").reduce((a, e) => a + e.kcal, 0),
+  });
+  return [`\n🏅 <b>Kun bahosi: ${q.grade} (${q.score}/100)</b>`, ...q.good.slice(0, 2).map((g) => `✓ ${g}`), ...q.improve.slice(0, 2).map((g) => `→ ${g}`)].join("\n");
+}
+
 export function today(store: Store, user: User): Reply {
   const u = store.getUser(user.id) ?? user;
   return {
-    text: dayMessage(store.day(u.id), targetsFor(u), u.weightKg),
+    text: dayMessage(store.day(u.id), targetsFor(u), u.weightKg) + scoreLine(store, u),
     buttons: [[{ text: "💧 +250 ml suv", data: "water:250" }]],
   };
 }
 
 export function week(store: Store, user: User): Reply {
-  return { text: weekMessage(store.week(user.id), targetsFor(user), store.weights(user.id, 14)) };
+  const t = targetsFor(user);
+  const ad = adaptiveTdee(store.dailyIntake(user.id, 60), store.weights(user.id, 90), 28, tashkentDay());
+  const extra = ad
+    ? `\n\n🔬 <b>Haqiqiy sarfingiz: ${ad.tdee} kkal/kun</b>\n${ad.days} kunda o'rtacha ${ad.avgIntake} kkal yedingiz, trend vazn ${ad.trendChangeKg > 0 ? "+" : ""}${ad.trendChangeKg} kg.` +
+      (t ? ` Formula bo'yicha: ${t.tdee}.${Math.abs(ad.tdee - t.tdee) > 150 ? ` Tavsiya: kuniga ${ad.tdee + t.dailyDelta} kkal.` : ""}` : "")
+    : "";
+  return { text: weekMessage(store.week(user.id), t, store.weights(user.id, 14)) + extra };
+}
+
+const clock = (ms: number) => new Date(ms + 5 * 3600_000).toISOString().slice(11, 16); // Tashkent time
+
+export function fast(store: Store, user: User, arg: string): Reply {
+  const a = (arg ?? "").trim().toLowerCase();
+  const active = store.activeFast(user.id);
+  if (["stop", "tugat", "to'xtat", "toxtat", "end"].includes(a)) {
+    const f = store.endFast(user.id);
+    if (!f) return { text: "Faol ochlik yo'q. Boshlash: <code>/ochlik 16</code>" };
+    const min = Math.round((f.endedAt - f.startedAt) / 60000);
+    const ok = min >= f.hours * 60;
+    return { text: `${ok ? "🎉 Ochlik yakunlandi" : "⏹ Ochlik to'xtatildi"}: ${formatDuration(min)} (maqsad ${f.hours} soat).\nJami muvaffaqiyatli ochliklar: ${store.completedFasts(user.id)}.` };
+  }
+  const hours = parseFloat(a);
+  if (hours) {
+    if (!(hours >= 12 && hours <= 24)) return { text: "Ochlik 12 dan 24 soatgacha bo'lsin, masalan: <code>/ochlik 16</code>" };
+    store.startFast(user.id, hours);
+    return {
+      text: `⏳ <b>${hours} soatlik ochlik boshlandi</b> (${clock(Date.now())}). ${clock(Date.now() + hours * 3600_000)} da tugaydi.\nHolatni ko'rish: /ochlik\n\n<i>${FASTING_WARNING}</i>`,
+      buttons: [[{ text: "⏹ To'xtatish", data: "fast:stop" }]],
+    };
+  }
+  if (active) {
+    const st = fastingStatus(active.startedAt, active.hours);
+    const bar = "▓".repeat(Math.round(st.progress * 10)) + "░".repeat(10 - Math.round(st.progress * 10));
+    return {
+      text: [
+        `⏳ <b>Ochlik: ${formatDuration(st.elapsedMin)}</b> / ${active.hours} soat`,
+        `<code>${bar}</code> ${Math.round(st.progress * 100)}%`,
+        st.done ? "🎉 Maqsadga yetdingiz!" : `Qoldi: ${formatDuration(st.remainingMin)} (${clock(st.endsAt)} da)`,
+        "",
+        `<b>${st.stage.title}</b>: ${st.stage.text}`,
+      ].join("\n"),
+      buttons: [[{ text: st.done ? "✅ Yakunlash" : "⏹ To'xtatish", data: "fast:stop" }]],
+    };
+  }
+  return {
+    text: ["⏳ <b>Interval ochlik</b>", "", ...FASTING_PLANS.map((p) => `<b>${p.label}</b>: ${p.hint}`), "", "Qaysi rejani boshlaymiz?"].join("\n"),
+    buttons: [FASTING_PLANS.slice(0, 3).map((p) => ({ text: p.label, data: `fast:${p.fastHours}` })), FASTING_PLANS.slice(3).map((p) => ({ text: p.label, data: `fast:${p.fastHours}` }))],
+  };
+}
+
+export function menu(store: Store, user: User, seed?: number): Reply {
+  const u = store.getUser(user.id) ?? user;
+  const t = targetsFor(u);
+  if (!t) return { text: "Avval kunlik me'yorni hisoblaylik: /maqsad" };
+  const sd = seed ?? Math.floor(Date.now() / 86400000);
+  const m = generateMenu({ calories: t.calories, protein: t.protein, goal: u.goal ?? undefined }, sd);
+  const lines = [`🍽 <b>Bugungi menyu</b> (${m.total.kcal} kkal, oqsil ${Math.round(m.total.protein)} g)`, ""];
+  for (const x of m.meals) lines.push(`<b>${MENU_MEAL_LABELS[x.meal]}</b> · ${x.total.kcal} kkal`, esc(menuLine(x)), "");
+  lines.push(`Me'yoringiz: ${t.calories} kkal, oqsil ${t.protein} g.`);
+  return {
+    text: lines.join("\n"),
+    buttons: [[{ text: "🔄 Boshqa variant", data: `menu:next:${sd}` }, { text: "➕ Kundalikka", data: `menu:add:${sd}` }]],
+  };
+}
+
+function addMenu(store: Store, user: User, seed: number): Reply {
+  const u = store.getUser(user.id) ?? user;
+  const t = targetsFor(u);
+  if (!t) return { text: "Avval /maqsad" };
+  const m = generateMenu({ calories: t.calories, protein: t.protein, goal: u.goal ?? undefined }, seed);
+  store.addEntries(u.id, m.meals.flatMap((x) => x.items));
+  return { text: `✅ Menyu kundalikka qo'shildi: ${m.total.kcal} kkal. Yemagan ovqatni /ochir bilan olib tashlang.` };
+}
+
+export function repeatList(store: Store, user: User): Reply {
+  const recent = store.recentMeals(user.id, 6);
+  if (!recent.length) return { text: "Hali takrorlaydigan ovqat yo'q." };
+  return {
+    text: "🔁 Qaysi ovqatni yana qo'shamiz?",
+    buttons: recent.map((r) => [{ text: `${r.text.slice(0, 40)} · ${r.kcal} kkal`, data: `rep:${r.meal}` }]),
+  };
+}
+
+function repeatMeal(store: Store, user: User, meal: string): Reply {
+  const rows = store.repeatMeal(user.id, meal);
+  if (!rows.length) return { text: "Bu ovqat topilmadi." };
+  const kcal = Math.round(rows.reduce((a, e) => a + e.kcal, 0));
+  return { text: `✅ Yana qo'shildi: ${esc(rows.map((e) => e.input).join(", "))} (+${kcal} kkal)\nBugungi holat: /bugun` };
+}
+
+/** Diary as CSV for Excel. */
+export function exportCsv(store: Store, user: User): string {
+  const q = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const rows = store.allEntries(user.id).map((e) =>
+    [e.day, q(getFood(e.foodId)?.name.uz ?? e.foodId), q(e.input), e.grams, Math.round(e.kcal), e.protein.toFixed(1), e.fat.toFixed(1), e.carbs.toFixed(1)].join(","),
+  );
+  return ["Sana,Taom,Yozilgan,Gramm,Kkal,Oqsil,Yog',Uglevod", ...rows].join("\n");
 }
 
 export function undo(store: Store, user: User): Reply {
