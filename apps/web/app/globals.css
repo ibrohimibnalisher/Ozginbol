@@ -107,7 +107,7 @@ textarea.meal:focus, input:focus, select:focus { outline: 2px solid var(--accent
 .item .name { font-weight: 650; }
 .item .meta { color: var(--muted); font-size: 14px; }
 .item .kcal { font-weight: 800; font-size: 18px; text-align: right; white-space: nowrap; }
-.item .qty { display: flex; align-items: center; gap: 6px; }
+
 .item .qty button {
   width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--surface-2); color: var(--text); font-size: 18px; cursor: pointer; line-height: 1;
@@ -156,3 +156,55 @@ footer { color: var(--muted); font-size: 14px; padding: 32px 0 48px; border-top:
   nav.links { display: none; }
   table.foods .hide-sm { display: none; }
 }
+
+.item-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.item-tools .grams { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 14px; }
+.item-tools .grams input {
+  width: 76px; font: inherit; font-size: 15px; color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px;
+}
+.mini {
+  font: inherit; font-size: 14px; min-width: 30px; height: 30px; padding: 0 10px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+}
+.mini.size.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+.link { font: inherit; font-size: 14px; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 4px 6px; text-decoration: underline; }
+.source { margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--surface-2); font-size: 14px; line-height: 1.55; }
+.source ul { margin: 6px 0; padding-left: 18px; }
+.source .recipe-note { color: var(--muted); margin-top: 6px; }
+.source .per100 { margin-top: 6px; font-weight: 600; }
+
+.modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.mode {
+  font: inherit; text-align: left; cursor: pointer; padding: 12px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); display: flex; flex-direction: column; gap: 4px;
+}
+.mode span { color: var(--muted); font-size: 13px; line-height: 1.35; }
+.mode.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.form label.wide { grid-column: span 2; }
+.form label.full { grid-column: 1 / -1; }
+.eta { margin: 14px 0 0; font-size: 16px; }
+.warn { color: var(--warn); margin: 8px 0 0; font-size: 14px; }
+.steps { margin-top: 14px; background: var(--surface-2); border-radius: 12px; padding: 12px 14px; }
+.steps summary { cursor: pointer; font-weight: 700; }
+.steps ol { margin: 8px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; background: var(--surface-2); padding: 4px; border-radius: 12px; }
+.tabs button { flex: 1; font: inherit; font-size: 15px; border: 0; border-radius: 9px; padding: 9px; cursor: pointer; background: transparent; color: var(--muted); }
+.tabs button.on { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: var(--shadow); }
+textarea.meal.small { min-height: 80px; font-size: 16px; }
+.myfoods { list-style: none; padding: 0; margin: 16px 0 0; }
+.myfoods li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: var(--surface-2); }
+.badge { font-size: 11px; padding: 1px 6px; border-radius: 6px; background: var(--surface-2); color: var(--muted); margin-left: 4px; white-space: nowrap; }
+.badge.recipe { background: var(--accent-soft); color: var(--accent); }
+.badge.user { background: #e8f0ff; color: var(--protein); }
+
+@media (max-width: 640px) {
+  .modes { grid-template-columns: 1fr 1fr; }
+  .form label.wide { grid-column: 1 / -1; }
+}
+.item .kcal { align-self: start; }
+.form .full { grid-column: 1 / -1; }

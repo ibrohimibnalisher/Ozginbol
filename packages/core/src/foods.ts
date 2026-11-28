@@ -1,4 +1,6 @@
-import type { Food, FoodCategory, UnitKey } from "./types";
+import type { Food, FoodCategory, SizeKey, UnitKey } from "./types";
+import { INGREDIENTS } from "./ingredients";
+import { RECIPES, computeRecipe } from "./recipes";
 
 type M = [kcal: number, protein: number, fat: number, carbs: number, fiber?: number];
 
@@ -33,7 +35,7 @@ function f(
  * and cross-checked against Russian composition tables. Portion weights are
  * what a serving usually weighs in Uzbekistan, not Western sizes.
  */
-export const FOODS: Food[] = [
+const DISHES: Food[] = [
   // ───────────── Milliy taomlar ─────────────
   f("osh", ["Osh (palov)", "Плов узбекский", "Uzbek plov"],
     ["osh", "palov", "plov", "palov osh", "toshkent oshi", "to'y oshi", "plov uzbekskiy", "плов", "ош", "палов", "pilaf"],
@@ -406,6 +408,41 @@ export const FOODS: Food[] = [
     ["mayonez", "майонез", "mayo"],
     "yog", [680, 1, 75, 2.6], { osh_qoshiq: 15, choy_qoshiq: 5 }, "osh_qoshiq", "usda"),
 ];
+
+const SIZES: Record<string, Partial<Record<SizeKey, number>>> = {
+  somsa: { kichik: 90, orta: 130, katta: 180 },
+  somsa_kokat: { kichik: 80, orta: 110, katta: 150 },
+  somsa_kartoshka: { kichik: 90, orta: 120, katta: 160 },
+  manti: { kichik: 40, orta: 55, katta: 75 },
+  osh: { kichik: 250, orta: 350, katta: 500 },
+  lagmon: { kichik: 350, orta: 450, katta: 600 },
+  qovurma_lagmon: { kichik: 250, orta: 350, katta: 450 },
+  shorva: { kichik: 300, orta: 400, katta: 550 },
+  mastava: { kichik: 300, orta: 400, katta: 550 },
+  chuchvara: { kichik: 250, orta: 350, katta: 450 },
+  non: { kichik: 35, orta: 50, katta: 70 },
+  olma: { kichik: 130, orta: 180, katta: 240 },
+  banan: { kichik: 100, orta: 120, katta: 150 },
+  kartoshka: { kichik: 80, orta: 120, katta: 180 },
+  tuxum: { kichik: 45, orta: 55, katta: 65 },
+  burger: { kichik: 120, orta: 230, katta: 320 },
+  lavash_fastfud: { kichik: 250, orta: 350, katta: 450 },
+};
+
+const ingById = new Map(INGREDIENTS.map((x) => [x.id, x]));
+for (const d of DISHES) {
+  const recipe = RECIPES[d.id];
+  if (recipe) {
+    d.recipe = recipe;
+    d.per100 = computeRecipe(recipe, (id) => ingById.get(id));
+    d.source = "recipe";
+  }
+  const sz = SIZES[d.id];
+  if (sz) d.sizes = sz;
+}
+
+export const FOODS: Food[] = [...DISHES, ...INGREDIENTS];
+export { INGREDIENTS };
 
 const byId = new Map(FOODS.map((x) => [x.id, x]));
 

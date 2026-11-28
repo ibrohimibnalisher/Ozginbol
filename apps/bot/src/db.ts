@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
-import type { Activity, Goal, Macros, ParsedItem, Profile, Sex, UnitKey } from "@ozginbol/core";
+import type { Activity, Food, Goal, Macros, ParsedItem, Profile, Sex, UnitKey } from "@ozginbol/core";
 
-export type Step = "sex" | "age" | "height" | "weight" | "activity" | "goal" | "done";
+export type Step = "sex" | "age" | "height" | "weight" | "activity" | "goal" | "rate" | "target" | "done";
 
 export interface User {
   id: number;
@@ -13,6 +13,8 @@ export interface User {
   weightKg: number | null;
   activity: Activity | null;
   goal: Goal | null;
+  rateKgPerWeek: number | null;
+  targetWeightKg: number | null;
   remind: number;
 }
 
@@ -49,7 +51,11 @@ export function shiftDay(day: string, delta: number): string {
 
 export function profileOf(u: User): Profile | null {
   if (!u.sex || !u.age || !u.heightCm || !u.weightKg || !u.activity || !u.goal) return null;
-  return { sex: u.sex, age: u.age, heightCm: u.heightCm, weightKg: u.weightKg, activity: u.activity, goal: u.goal };
+  return {
+    sex: u.sex, age: u.age, heightCm: u.heightCm, weightKg: u.weightKg, activity: u.activity, goal: u.goal,
+    ...(u.rateKgPerWeek !== null ? { rateKgPerWeek: u.rateKgPerWeek } : {}),
+    ...(u.targetWeightKg !== null ? { targetWeightKg: u.targetWeightKg } : {}),
+  };
 }
 
 const SCHEMA = `
@@ -70,6 +76,7 @@ CREATE TABLE IF NOT EXISTS workouts (
   id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, day TEXT NOT NULL,
   exercise_id TEXT NOT NULL, minutes REAL NOT NULL, kcal REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS custom_foods (user_id INTEGER NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, json TEXT NOT NULL, PRIMARY KEY (user_id, id));
 CREATE TABLE IF NOT EXISTS weights (user_id INTEGER NOT NULL, day TEXT NOT NULL, kg REAL NOT NULL, PRIMARY KEY (user_id, day));
 `;
 
@@ -86,6 +93,8 @@ function toUser(r: Row): User {
     weightKg: (r.weight_kg as number) ?? null,
     activity: (r.activity as Activity) ?? null,
     goal: (r.goal as Goal) ?? null,
+    rateKgPerWeek: (r.rate as number) ?? null,
+    targetWeightKg: (r.target_weight as number) ?? null,
     remind: Number(r.remind ?? 1),
   };
 }
@@ -111,7 +120,7 @@ function toEntry(r: Row): Entry {
 
 const COLS: Record<string, string> = {
   name: "name", step: "step", sex: "sex", age: "age", heightCm: "height_cm", weightKg: "weight_kg",
-  activity: "activity", goal: "goal", remind: "remind",
+  activity: "activity", goal: "goal", remind: "remind", rateKgPerWeek: "rate", targetWeightKg: "target_weight",
 };
 
 /**
@@ -125,6 +134,28 @@ export class Store {
     this.db = new DatabaseSync(path);
     this.db.exec("PRAGMA journal_mode = WAL;");
     this.db.exec(SCHEMA);
+    // Columns added after the first release.
+    for (const col of ["rate REAL", "target_weight REAL"]) {
+      try {
+        this.db.exec(`ALTER TABLE users ADD COLUMN ${col}`);
+      } catch {
+        /* already there */
+      }
+    }
+  }
+
+  customFoods(userId: number): Food[] {
+    return (this.db.prepare("SELECT json FROM custom_foods WHERE user_id = ? ORDER BY rowid").all(userId) as Row[]).map((r) => JSON.parse(String(r.json)) as Food);
+  }
+
+  saveCustomFood(userId: number, food: Food): void {
+    // Same name replaces the old one.
+    this.db.prepare("DELETE FROM custom_foods WHERE user_id = ? AND lower(name) = lower(?)").run(userId, food.name.uz);
+    this.db.prepare("INSERT INTO custom_foods (user_id, id, name, json) VALUES (?, ?, ?, ?)").run(userId, food.id, food.name.uz, JSON.stringify(food));
+  }
+
+  deleteCustomFood(userId: number, id: string): boolean {
+    return Number(this.db.prepare("DELETE FROM custom_foods WHERE user_id = ? AND id = ?").run(userId, id).changes) > 0;
   }
 
   getUser(id: number): User | null {

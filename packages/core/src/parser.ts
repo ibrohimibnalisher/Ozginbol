@@ -1,6 +1,6 @@
 import { FOODS } from "./foods";
 import { editDistance, key, normalize, stem } from "./normalize";
-import type { Food, Macros, ParseResult, ParsedItem, UnitKey } from "./types";
+import type { Food, Macros, ParseResult, ParsedItem, SizeKey, UnitKey } from "./types";
 
 // ───────────────────────── units ─────────────────────────
 
@@ -54,11 +54,18 @@ const STOP = new Set([
   "i", "a", "an", "ate", "had", "drank", "for", "breakfast", "lunch", "dinner", "of", "the", "with",
 ]);
 
+const SIZE_WORDS: Record<string, SizeKey> = {
+  kichik: "kichik", kichkina: "kichik", mayda: "kichik", malenkiy: "kichik", malenkaya: "kichik", small: "kichik",
+  "o'rta": "orta", orta: "orta", oddiy: "orta", sredniy: "orta", srednyaya: "orta", medium: "orta",
+  katta: "katta", kattakon: "katta", bolshoy: "katta", bolshaya: "katta", big: "katta", large: "katta",
+};
+const SIZE_FACTOR: Record<SizeKey, number> = { kichik: 0.7, orta: 1, katta: 1.4 };
+
 const SPLIT = /[,;\n+]|\s(?:va|hamda|bilan|keyin|i|and|then|plyus)\s/;
 
 // ───────────────────────── food index ─────────────────────────
 
-interface AliasEntry {
+export interface AliasEntry {
   food: Food;
   key: string; // stemmed, apostrophe-free
   words: number;
@@ -68,16 +75,20 @@ function phraseKey(s: string): string {
   return key(s).split(" ").map(stem).join(" ");
 }
 
-const ALIASES: AliasEntry[] = [];
-for (const food of FOODS) {
-  const all = new Set([...food.aliases, food.name.uz, food.name.ru, food.name.en, food.id.replace(/_/g, " ")]);
-  for (const a of all) {
-    const k = phraseKey(a.replace(/\(.*?\)/g, ""));
-    if (k) ALIASES.push({ food, key: k, words: k.split(" ").length });
+export function buildAliases(foods: Food[]): AliasEntry[] {
+  const out: AliasEntry[] = [];
+  for (const food of foods) {
+    const all = new Set([...food.aliases, food.name.uz, food.name.ru, food.name.en, food.id.startsWith("x_") || food.id.includes(":") ? "" : food.id.replace(/_/g, " ")]);
+    for (const a of all) {
+      const k = phraseKey(a.replace(/\(.*?\)/g, ""));
+      if (k) out.push({ food, key: k, words: k.split(" ").length });
+    }
   }
+  // Longest aliases first so "qovurma lag'mon" beats "lag'mon".
+  return out.sort((a, b) => b.key.length - a.key.length);
 }
-// Longest aliases first so "qovurma lag'mon" beats "lag'mon".
-ALIASES.sort((a, b) => b.key.length - a.key.length);
+
+const ALIASES = buildAliases(FOODS);
 
 export interface FoodMatch {
   food: Food;
@@ -85,23 +96,24 @@ export interface FoodMatch {
 }
 
 /** Match a food phrase ("qovurma lag'mon", "samsa", "лагман") to a food. */
-export function matchFood(phrase: string): FoodMatch | null {
+export function matchFood(phrase: string, preferred: AliasEntry[] = []): FoodMatch | null {
   const k = phraseKey(phrase);
   if (!k) return null;
   const padded = ` ${k} `;
+  const lists = preferred.length ? [preferred, ALIASES] : [ALIASES];
 
-  // 1) exact alias, or alias contained as whole words
-  for (const a of ALIASES) {
+  // 1) exact alias, or alias contained as whole words (user's own foods first)
+  for (const list of lists) for (const a of list) {
     if (a.key === k) return { food: a.food, confidence: 1 };
   }
-  for (const a of ALIASES) {
+  for (const list of lists) for (const a of list) {
     if (padded.includes(` ${a.key} `)) return { food: a.food, confidence: 0.95 };
   }
 
   // 2) fuzzy: compare alias with every same-length word window of the phrase
   const words = k.split(" ");
   let best: FoodMatch | null = null;
-  for (const a of ALIASES) {
+  for (const a of [...preferred, ...ALIASES]) {
     for (let n = Math.max(1, a.words - 1); n <= Math.min(words.length, a.words + 1); n++) {
       for (let i = 0; i + n <= words.length; i++) {
         const cand = words.slice(i, i + n).join(" ");
@@ -119,11 +131,11 @@ export function matchFood(phrase: string): FoodMatch | null {
 }
 
 /** Autocomplete-style search for food pickers (web, bot, app). */
-export function searchFoods(query: string, limit = 10): Food[] {
+export function searchFoods(query: string, limit = 10, extra: Food[] = []): Food[] {
   const q = key(query);
   if (!q) return [];
   const scored = new Map<string, { food: Food; score: number }>();
-  for (const a of ALIASES) {
+  for (const a of [...buildAliases(extra), ...ALIASES]) {
     let score = 0;
     if (a.key === q) score = 100;
     else if (a.key.startsWith(q)) score = 80 - (a.key.length - q.length) * 0.1;
@@ -132,6 +144,8 @@ export function searchFoods(query: string, limit = 10): Food[] {
       const d = editDistance(q, a.key.slice(0, q.length));
       if (d <= (q.length <= 4 ? 1 : 2)) score = 40 - d * 5;
     }
+    if (score > 0 && a.food.category === "xomashyo") score -= 5; // ready dishes first
+    if (score > 0 && a.food.source === "user") score += 5; // the user's own foods first
     if (score > 0) {
       const prev = scored.get(a.food.id);
       if (!prev || prev.score < score) scored.set(a.food.id, { food: a.food, score });
@@ -206,6 +220,7 @@ export function gramsFor(food: Food, quantity: number, unit: UnitKey): { grams: 
 interface Quantity {
   quantity: number;
   unit?: UnitSpec;
+  size?: SizeKey;
   rest: string[];
 }
 
@@ -219,6 +234,7 @@ function parseNumber(tok: string): number | undefined {
 function extractQuantity(tokens: string[]): Quantity {
   let quantity: number | undefined;
   let unit: UnitSpec | undefined;
+  let size: SizeKey | undefined;
   const rest: string[] = [];
 
   for (let i = 0; i < tokens.length; i++) {
@@ -247,10 +263,14 @@ function extractQuantity(tokens: string[]): Quantity {
       continue;
     }
     if (STOP.has(tok)) continue;
+    if (SIZE_WORDS[tok]) {
+      size ??= SIZE_WORDS[tok];
+      continue;
+    }
     tok = tok.replace(/^[-'./]+|[-'./]+$/g, "");
     if (tok) rest.push(tok);
   }
-  return { quantity: quantity ?? 1, unit, rest };
+  return { quantity: quantity ?? 1, unit, size, rest };
 }
 
 function segments(text: string): string[] {
@@ -266,16 +286,24 @@ function segments(text: string): string[] {
  * Parse free text like "2 ta somsa, 1 kosa lag'mon va 1 piyola choy"
  * (Uzbek Latin/Cyrillic, Russian or English) into foods with nutrition.
  */
-export function parseMeal(text: string): ParseResult {
+export interface ParseOptions {
+  /** The user's own foods and recipes; matched before the built-in database. */
+  extraFoods?: Food[];
+  /** Prefer raw ingredients (for building a recipe from "500 g un, 1 kg go'sht"). */
+  ingredients?: boolean;
+}
+
+export function parseMeal(text: string, opts: ParseOptions = {}): ParseResult {
   const items: ParsedItem[] = [];
   const unknown: string[] = [];
+  const preferred = buildAliases([...(opts.extraFoods ?? []), ...(opts.ingredients ? FOODS.filter((f) => f.category === "xomashyo") : [])]);
 
   for (const seg of segments(text)) {
     const tokens = seg.split(" ").filter(Boolean);
     const q = extractQuantity(tokens);
     if (!q.rest.length) continue;
     const phrase = q.rest.join(" ");
-    const m = matchFood(phrase);
+    const m = matchFood(phrase, preferred);
     if (!m) {
       unknown.push(seg);
       continue;
@@ -291,7 +319,11 @@ export function parseMeal(text: string): ParseResult {
     } else {
       unitKey = m.food.defaultUnit;
     }
-    const { grams, unit } = gramsFor(m.food, qty, unitKey);
+    let { grams, unit } = gramsFor(m.food, qty, unitKey);
+    if (q.size && unit !== "g" && unit !== "ml") {
+      const sized = unit === m.food.defaultUnit ? m.food.sizes?.[q.size] : undefined;
+      grams = sized ? qty * sized : grams * SIZE_FACTOR[q.size];
+    }
     items.push({
       input: seg,
       food: m.food,
@@ -300,6 +332,7 @@ export function parseMeal(text: string): ParseResult {
       grams: Math.round(grams),
       nutrition: scaleMacros(m.food.per100, grams),
       confidence: m.confidence,
+      ...(q.size ? { size: q.size } : {}),
     });
   }
   return { items, unknown, total: sumMacros(items.map((i) => i.nutrition)) };

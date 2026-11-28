@@ -33,6 +33,25 @@ const GYM_PULL = ["Turnik yoki yuqori blok: 4 × 6-10", "Shtanga eshkak: 3 × 8-
 const GYM_LEGS = ["O'tirib-turish shtanga bilan: 4 × 6-8", "Rumin tortishi: 3 × 8-10", "Oyoq pressi: 3 × 10-12", "Boldir: 4 × 15"];
 
 const PLANS: Record<Goal, TrainingPlan> = {
+  cut: {
+    goal: "cut",
+    title: "Sushka uchun reja (zal, haftasiga 4-5 kun)",
+    summary: "Defitsitda mushakni saqlashning asosiy sharti: og'ir kuch mashqlarini tashlamaslik va oqsilni yuqori ushlash.",
+    week: [
+      { day: "Dushanba", focus: "Itarish (ko'krak, yelka, triceps)", exercises: GYM_PUSH },
+      { day: "Seshanba", focus: "Tortish (orqa, biceps) + 20 daq kardio", exercises: [...GYM_PULL, "20 daqiqa tez yurish (nishabli yo'lakda)"] },
+      { day: "Payshanba", focus: "Oyoqlar", exercises: GYM_LEGS },
+      { day: "Juma", focus: "Butun tana (yengilroq)", exercises: FULL_BODY_A },
+      { day: "Shanba", focus: "Intervalli kardio", exercises: ["8-10 × (30 soniya tez / 90 soniya sekin)", "10 daqiqa sekin yurish"] },
+    ],
+    rules: [
+      "Og'irlikni kamaytirmang: kuch saqlansa, mushak saqlanadi.",
+      "Oqsil 2-2.4 g/kg, har ovqatda 30-40 g.",
+      "Kuniga 10-12 ming qadam: kardiodan ham ko'proq yoqadi va ishtahani oshirmaydi.",
+      "Haftasiga 0.5-1% vazn tashlang. Kuch 2 hafta ketma-ket tushsa, defitsitni kamaytiring.",
+      "7-9 soat uyqu, haftada 1 kun to'liq dam.",
+    ],
+  },
   lose: {
     goal: "lose",
     title: "Ozish uchun reja (uyda yoki zalda, haftasiga 4 kun)",

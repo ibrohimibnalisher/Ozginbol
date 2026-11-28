@@ -140,21 +140,30 @@ export function weekMessage(days: DaySummary[], t: Targets | null, weights: { da
   return lines.join("\n");
 }
 
-export function targetsMessage(t: Targets, goal: string): string {
-  return [
+export function targetsMessage(t: Targets, goal: string, targetWeightKg?: number): string {
+  const pct = (g: number, k: number) => Math.round(((g * k) / t.calories) * 100);
+  const lines = [
     `🎯 <b>Kunlik me'yoringiz</b> (${goal})`,
     "",
     `Kaloriya: <b>${t.calories} kkal</b>`,
-    `Oqsil: ${t.protein} g · Yog': ${t.fat} g · Uglevod: ${t.carbs} g`,
+    `Oqsil: ${t.protein} g (${pct(t.protein, 4)}%) · Yog': ${t.fat} g (${pct(t.fat, 9)}%) · Uglevod: ${t.carbs} g (${pct(t.carbs, 4)}%)`,
     `Suv: ${(t.waterMl / 1000).toFixed(1)} l · Kletchatka: ${t.fiber} g`,
+  ];
+  if (t.weeksToTarget !== null && targetWeightKg) {
+    const d = new Date(Date.now() + t.weeksToTarget * 7 * 86_400_000);
+    const months = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentyabr", "oktyabr", "noyabr", "dekabr"];
+    lines.push("", `🏁 ${targetWeightKg} kg ga taxminan <b>${t.weeksToTarget} haftada</b> yetasiz (${d.getDate()}-${months[d.getMonth()]}).`);
+  }
+  for (const w of t.warnings) lines.push(`⚠️ ${esc(w)}`);
+  lines.push("", "<b>Qanday hisoblandi:</b>");
+  t.steps.forEach((s, i) => lines.push(`${i + 1}. ${esc(s)}`));
+  lines.push(
     "",
-    `TMI: ${t.bmi}. Tinch holatda ${t.bmr} kkal, faollik bilan ${t.tdee} kkal sarflaysiz.`,
-    t.weeklyChangeKg !== 0
-      ? `Shu me'yorda haftasiga ~${Math.abs(t.weeklyChangeKg)} kg ${t.weeklyChangeKg < 0 ? "ozasiz" : "qo'shasiz"}.`
-      : "Shu me'yorda vazningiz saqlanadi.",
+    `TMI ${t.bmi}. Bo'yingiz uchun sog'lom vazn: ${t.healthyWeight[0]}-${t.healthyWeight[1]} kg.`,
     "",
     "Endi nima yeganingizni yozib boring: <code>1 kosa lag'mon va 2 bo'lak non</code>",
-  ].join("\n");
+  );
+  return lines.join("\n");
 }
 
 export const HELP = [
@@ -164,6 +173,7 @@ export const HELP = [
   "<code>2 ta somsa va 1 piyola choy</code>",
   "<code>1 lagan osh, achchiq-chuchuk</code>",
   "<code>300 g tovuq ko'kragi, 200 g guruch</code>",
+  "<code>1 katta somsa</code> (kichik / o'rta / katta)",
   "",
   "/bugun: bugungi hisobot",
   "/hafta: haftalik hisobot",
@@ -174,5 +184,8 @@ export const HELP = [
   "/maqsad: shaxsiy me'yorni qayta hisoblash",
   "/mashqlar: maqsadingizga mos mashg'ulot rejasi",
   "/eslatma: kunlik eslatmani yoqish/o'chirish",
-  "/taom: taom qidirish (<code>/taom manti</code>)",
+  "/taom: taom va kaloriyasining manbasi (<code>/taom somsa</code>)",
+  "/yangi: o'z mahsulotingiz (<code>/yangi Agusha tvorog, 159, 18, 9, 2</code>)",
+  "/retsept: o'z retseptingiz masalliqlardan",
+  "/mening: qo'shgan mahsulotlaringiz",
 ].join("\n");

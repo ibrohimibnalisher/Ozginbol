@@ -19,7 +19,10 @@ await bot.api.setMyCommands([
   { command: "vazn", description: "Vaznni yozish" },
   { command: "maqsad", description: "Kunlik me'yorni hisoblash" },
   { command: "mashqlar", description: "Mashg'ulot rejasi" },
-  { command: "taom", description: "Taom qidirish" },
+  { command: "taom", description: "Taom va uning manbasi" },
+  { command: "yangi", description: "O'z mahsulotimni qo'shish" },
+  { command: "retsept", description: "O'z retseptimni qo'shish" },
+  { command: "mening", description: "Mening mahsulotlarim" },
   { command: "eslatma", description: "Eslatmalarni yoqish/o'chirish" },
   { command: "yordam", description: "Yordam" },
 ]);

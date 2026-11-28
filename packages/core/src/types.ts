@@ -26,6 +26,19 @@ export interface Macros {
   fiber?: number;
 }
 
+export type SizeKey = "kichik" | "orta" | "katta";
+
+export interface RecipeItem {
+  id: string;
+  grams: number;
+}
+
+export interface Recipe {
+  items: RecipeItem[];
+  yieldG: number;
+  note: string;
+}
+
 export type FoodCategory =
   | "milliy" // Uzbek / Central Asian dishes
   | "non" // bread & bakery
@@ -39,6 +52,7 @@ export type FoodCategory =
   | "shirinlik"
   | "fastfud"
   | "yog"
+  | "xomashyo" // raw ingredients for recipes
   | "boshqa";
 
 export interface Food {
@@ -59,7 +73,13 @@ export interface Food {
    * "ru-table": Russian standard composition tables (Skurikhin);
    * "recipe": computed from a typical Uzbek home/restaurant recipe.
    */
-  source: "usda" | "ru-table" | "recipe" | "label";
+  source: "usda" | "ru-table" | "recipe" | "label" | "user";
+  /** Exact citation (dataset + item), when known. */
+  ref?: string;
+  /** For recipe dishes: the ingredients the numbers are computed from. */
+  recipe?: Recipe;
+  /** Grams of one default unit for small / medium / large pieces. */
+  sizes?: Partial<Record<SizeKey, number>>;
 }
 
 export interface ParsedItem {
@@ -72,6 +92,7 @@ export interface ParsedItem {
   nutrition: Macros;
   /** 0..1, how sure the matcher is about the food. */
   confidence: number;
+  size?: SizeKey;
 }
 
 export interface ParseResult {

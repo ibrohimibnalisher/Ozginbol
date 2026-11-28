@@ -40,7 +40,13 @@ describe("telegram bot", () => {
     await h.text("68");
     await h.press("act:moderate");
     await h.press("goal:lose");
+    await h.press("rate:0.5");
+    await h.text("62");
     expect(String(h.last().text)).toContain("Kunlik me'yoringiz");
+    await h.text("/yangi Agusha tvorog, 159, 18, 9, 2");
+    expect(String(h.last().text)).toContain("qo'shildi");
+    await h.text("/taom somsa");
+    expect(String(h.last().text)).toContain("Manba");
     await h.text("1 kosa mastava, 2 bo'lak non");
     expect(String(h.last().text)).toContain("Mastava");
     expect(h.last().parse_mode).toBe("HTML");
