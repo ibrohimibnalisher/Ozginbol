@@ -228,7 +228,7 @@ export default function Onboarding({ onDone }: { onDone: (p: Profile) => void })
             ))}
           </Row>
         </Row>
-        <Text style={{ color: t.heroText, fontSize: 32, fontWeight: "800", letterSpacing: -1, marginTop: 16 }}>Ozginbol</Text>
+        <Text style={{ color: t.heroText, fontSize: 32, fontWeight: "800", letterSpacing: -1, marginTop: 16 }}>BeHealthy</Text>
         <Text style={{ color: t.heroMuted, fontSize: 16, lineHeight: 23, marginTop: 6 }}>
           {tr('"2 ta somsa va choy" deb yozing, kaloriya va makrolarni o\'zimiz hisoblaymiz. Har bir raqamning manbasi ochiq.')}
         </Text>
