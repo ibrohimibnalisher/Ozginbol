@@ -24,7 +24,7 @@ export function mealMessage(r: ParseResult, today: DaySummary, targets: Targets 
     lines.push(`🍽 <b>${L("Kundalikka qo'shildi")}</b>`);
     for (const it of r.items) {
       const portion = it.unit === "g" || it.unit === "ml" ? `${it.grams} ${it.unit}` : `${formatUnit(it.unit, it.quantity, lang())}, ${it.grams} ${it.food.liquid ? "ml" : "g"}`;
-      const guess = it.confidence < 0.9 ? ` <i>(${L('"{input}" deb tushundim', { input: esc(it.input) })})</i>` : "";
+      const guess = it.confidence < 0.9 && lang() === "uz" ? ` <i>(${L('"{input}" deb tushundim', { input: esc(it.input) })})</i>` : "";
       lines.push(`• ${esc(it.food.name[lang()])}, ${portion}: <b>${it.nutrition.kcal}</b> ${L("kkal")}${guess}`);
     }
     if (r.items.length > 1) lines.push(`${L("Jami")}: <b>${r.total.kcal} ${L("kkal")}</b> · ${macroLine(r.total)}`);
