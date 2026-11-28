@@ -31,6 +31,15 @@ export interface Workout {
   kcal: number;
 }
 
+export interface BodyMeasurement {
+  day: string;
+  neckCm: number;
+  waistCm: number;
+  hipCm?: number;
+  weightKg: number;
+  bodyFatPct: number;
+}
+
 export interface DiaryState {
   version: 1;
   profile: Profile | null;
@@ -40,9 +49,11 @@ export interface DiaryState {
   workouts: Workout[];
   /** The user's own products, recipes and scanned barcodes. */
   customFoods: Food[];
+  /** Tape measurements (neck, waist, hip) with US Navy body fat. */
+  measurements: BodyMeasurement[];
 }
 
-export const EMPTY: DiaryState = { version: 1, profile: null, entries: [], water: {}, weights: [], workouts: [], customFoods: [] };
+export const EMPTY: DiaryState = { version: 1, profile: null, entries: [], water: {}, weights: [], workouts: [], customFoods: [], measurements: [] };
 
 /** Local calendar day, YYYY-MM-DD. */
 export function dayKey(d = new Date()): string {
@@ -79,6 +90,8 @@ export type Action =
   | { type: "removeWorkout"; id: string }
   | { type: "saveFood"; food: Food }
   | { type: "removeFood"; id: string }
+  | { type: "measure"; m: BodyMeasurement }
+  | { type: "removeMeasure"; day: string }
   | { type: "reset" };
 
 export function reducer(s: DiaryState, a: Action): DiaryState {
@@ -132,6 +145,14 @@ export function reducer(s: DiaryState, a: Action): DiaryState {
     }
     case "removeFood":
       return { ...s, customFoods: s.customFoods.filter((f) => f.id !== a.id) };
+    case "measure": {
+      const measurements = s.measurements.filter((x) => x.day !== a.m.day).concat(a.m).sort((x, y) => x.day.localeCompare(y.day));
+      const latest = measurements[measurements.length - 1]!.day === a.m.day;
+      const next = latest ? reducer(s, { type: "weight", day: a.m.day, kg: a.m.weightKg }) : s;
+      return { ...next, measurements, profile: next.profile && latest ? { ...next.profile, bodyFatPct: a.m.bodyFatPct } : next.profile };
+    }
+    case "removeMeasure":
+      return { ...s, measurements: s.measurements.filter((x) => x.day !== a.day) };
     case "reset":
       return EMPTY;
   }

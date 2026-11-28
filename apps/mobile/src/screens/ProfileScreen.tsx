@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ScrollView, Text } from "react-native";
-import { Button, Card, H1, Muted } from "../components/ui";
+import { Button, Card, H1, Icon, Muted } from "../components/ui";
 import { targetsOf } from "../diary";
 import { useDiary } from "../store";
 import { useTheme } from "../theme";
@@ -8,7 +8,7 @@ import { ProfileForm } from "./Onboarding";
 
 const BMI: Record<string, string> = { underweight: "vazn kam", normal: "normal", overweight: "ortiqcha vazn", obese: "semizlik" };
 
-export default function ProfileScreen({ onMyFoods }: { onMyFoods: () => void }) {
+export default function ProfileScreen({ onMyFoods, onBody }: { onMyFoods: () => void; onBody: () => void }) {
   const t = useTheme();
   const { state, dispatch } = useDiary();
   const [saved, setSaved] = useState(false);
@@ -37,12 +37,13 @@ export default function ProfileScreen({ onMyFoods }: { onMyFoods: () => void }) 
           }}
         />
       </Card>
-      <Button kind="ghost" title={`⭐ Mahsulotlarim (${state.customFoods.length})`} onPress={onMyFoods} />
+      <Button kind="ghost" icon={<Icon name="ruler" size={18} color={t.text} />} title={state.profile?.bodyFatPct ? `Yog' foizi: ${state.profile.bodyFatPct}%` : "Yog' foizini o'lchash"} onPress={onBody} />
+      <Button kind="ghost" icon={<Icon name="star" size={18} color={t.text} />} title={`Mahsulotlarim (${state.customFoods.length})`} onPress={onMyFoods} />
       <Card>
         <Muted>Barcha ma'lumotlar faqat shu telefonda saqlanadi.</Muted>
         <Text style={{ height: 10 }} />
         <Button
-          kind="ghost"
+          kind="danger"
           title={confirmReset ? "Rostdan ham hammasini o'chiraymi? Bosing" : "Ma'lumotlarni tozalash"}
           onPress={() => (confirmReset ? dispatch({ type: "reset" }) : setConfirmReset(true))}
         />

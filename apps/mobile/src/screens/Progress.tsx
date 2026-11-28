@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import Svg, { Circle, Polyline } from "react-native-svg";
-import { Button, Card, H1, H2, Input, Muted, Row } from "../components/ui";
+import { FAT_CATEGORY_LABELS, fatCategory } from "@ozginbol/core";
+import { Button, Card, H1, H2, Icon, IconTile, Input, Muted, Row } from "../components/ui";
 import { dayKey, shiftDay, summarize, targetsOf } from "../diary";
 import { useDiary } from "../store";
 import { useTheme } from "../theme";
 
 const WD = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"];
 
-export default function Progress() {
+export default function Progress({ onBody }: { onBody: () => void }) {
   const t = useTheme();
   const { state, dispatch } = useDiary();
   const [w, setW] = useState("");
@@ -31,6 +32,7 @@ export default function Progress() {
     const py = wMax === wMin ? H / 2 : H - 10 - ((x.kg - wMin) / (wMax - wMin)) * (H - 20);
     return [px, py] as const;
   });
+  const lastM = state.measurements[state.measurements.length - 1];
   const first = weights[0];
   const last = weights[weights.length - 1];
 
@@ -48,7 +50,7 @@ export default function Progress() {
             return (
               <View key={d.day} style={{ flex: 1, alignItems: "center" }}>
                 <Text style={{ color: t.muted, fontSize: 10, marginBottom: 2 }}>{d.food.kcal || ""}</Text>
-                <View style={{ width: "70%", height: h, borderRadius: 6, backgroundColor: d.food.kcal ? (over ? t.warn : t.accent) : t.card2 }} />
+                <View style={{ width: "62%", height: h, borderRadius: 8, backgroundColor: d.food.kcal ? (over ? t.warn : t.accent) : t.card2 }} />
                 <Text style={{ color: d.day === today ? t.text : t.muted, fontSize: 12, marginTop: 4, fontWeight: d.day === today ? "700" : "400" }}>{wd}</Text>
               </View>
             );
@@ -65,7 +67,7 @@ export default function Progress() {
             ["Me'yorda", tg ? `${inRange}/${logged.length}` : "—", "kun"],
             ["Oqsil", logged.length ? `${avgP}` : "—", tg ? `/ ${tg.protein} g` : "g"],
           ].map(([l, v, u]) => (
-            <View key={l} style={{ flex: 1, backgroundColor: t.card2, borderRadius: 12, padding: 10 }}>
+            <View key={l} style={{ flex: 1, backgroundColor: t.card2, borderRadius: 16, padding: 12 }}>
               <Muted>{l}</Muted>
               <Text style={{ color: t.text, fontSize: 20, fontWeight: "800" }}>{v}</Text>
               <Muted>{u}</Muted>
@@ -74,8 +76,27 @@ export default function Progress() {
         </Row>
       </Card>
 
+      <Pressable onPress={onBody} accessibilityRole="button">
+        <Card>
+          <Row style={{ gap: 12 }}>
+            <IconTile>
+              <Icon name="ruler" size={20} color={t.accentStrong} />
+            </IconTile>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: t.text, fontSize: 17, fontWeight: "800" }}>Yog' foizi va o'lchamlar</Text>
+              <Muted style={{ fontSize: 13 }}>
+                {lastM
+                  ? `${lastM.bodyFatPct}% · ${FAT_CATEGORY_LABELS[fatCategory(state.profile!.sex, lastM.bodyFatPct)]} · bel ${lastM.waistCm} sm`
+                  : "Bo'yin va bel aylanasidan yog' foizini hisoblang"}
+              </Muted>
+            </View>
+            <Icon name="chevronR" color={t.faint} />
+          </Row>
+        </Card>
+      </Pressable>
+
       <Card>
-        <H2>⚖️ Vazn</H2>
+        <H2>Vazn</H2>
         {weights.length > 0 ? (
           <>
             <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>

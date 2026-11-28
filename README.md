@@ -25,10 +25,11 @@ npm run dev:web   # http://localhost:3000
 2. `apps/bot/.env.example` dan nusxa olib `apps/bot/.env` yarating, `BOT_TOKEN` ni yozing.
 3. `cd apps/bot && node --env-file=.env --import tsx src/index.ts` (yoki `BOT_TOKEN=... npm run dev:bot`).
 
-Bot buyruqlari: /bugun, /hafta, /ochir, /suv, /mashq, /vazn, /maqsad, /mashqlar, /taom (yoki /manba), /yangi, /retsept, /mening, /eslatma.
+Bot buyruqlari: /bugun, /hafta, /ochir, /suv, /mashq, /vazn, /olcham, /maqsad, /mashqlar, /taom (yoki /manba), /yangi, /retsept, /mening, /eslatma.
 
 - `/yangi Agusha tvorog, 159, 18, 9, 2` o'z mahsulotini qo'shadi (100 g uchun kkal, oqsil, yog', uglevod; oxiriga `dona 100` qo'shsa 1 dona og'irligi).
 - `/retsept Uy oshi: 1 kg guruch, 1 kg mol go'shti, 250 g yog' | 4500 | 12` retseptni masalliqlardan hisoblaydi (tayyor og'irlik va porsiya ixtiyoriy).
+- `/olcham bo'yin 38 bel 85` (ayollar `son 98` ham) yog' foizini hisoblaydi, o'lchovlar tarixini saqlaydi va kunlik me'yorni yog' foizi bilan qayta hisoblaydi.
 - `/taom somsa` taom kaloriyasi qayerdan olinganini masalliqma-masalliq ko'rsatadi. Oddiy matn yozilsa ("2 ta somsa va choy") kundalikka qo'shiladi, "30 daqiqa yugurdim" mashg'ulot sifatida yoziladi. Eslatmalar Toshkent vaqti bilan 13:00 va 20:30 da.
 
 ### Mobil ilova
@@ -67,3 +68,16 @@ To'rt rejim: Sushka (quritish), Ozish, Vaznni saqlash, Massa nabor.
 3. Kunlik farq = haftalik tezlik × 7700 / 7 (1 kg yog' ≈ 7700 kkal). Chegaralar: ozish defitsiti TDEE ning 25%, sushka 30%, massa profitsiti 20% dan oshmaydi; minimum ayollar 1200, erkaklar 1500 kkal.
 4. Makrolar: oqsil sushkada 2.2 g/kg, ozishda 1.8, saqlashda 1.6, massada 1.8 (TMI 30 dan yuqori bo'lsa tuzatilgan vazn bo'yicha); yog' 0.8-1.0 g/kg; qolgani uglevod.
 5. Maqsad vazn kiritilsa, unga necha haftada yetishi va sog'lom vazn oralig'i ko'rsatiladi. Har bir qadam foydalanuvchiga "Qanday hisoblandi" bo'limida ochiq ko'rsatiladi.
+
+## Yog' foizi
+
+AQSh harbiy-dengiz flotining (US Navy) lenta usuli (Hodgdon va Beckett, 1984), santimetrda:
+
+- Erkaklar: 495 ÷ (1.0324 − 0.19077 × log(bel − bo'yin) + 0.15456 × log(bo'y)) − 450
+- Ayollar: 495 ÷ (1.29579 − 0.35004 × log(bel + son − bo'yin) + 0.221 × log(bo'y)) − 450
+
+Natijadan yog' va yog'siz massa, ACE toifasi, bel ÷ bo'y nisbati (0.5 dan yuqorisi xavf) va JSST bel chegaralari (erkak 94/102, ayol 80/88 sm) chiqadi. O'lchov saqlansa, kunlik me'yor Katch-McArdle formulasi bilan hisoblanadi. Kod: `packages/core/src/body.ts`.
+
+## Dizayn
+
+Website va ilova bitta rang tizimidan foydalanadi (`apps/web/app/globals.css` va `apps/mobile/src/theme.ts`): yashil brend rangi, oqsil/yog'/uglevod uchun doimiy ranglar, kunduzgi va tungi rejim. Websiteda Manrope shrifti.

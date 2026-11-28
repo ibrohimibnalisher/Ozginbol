@@ -5,7 +5,9 @@ import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-
 import { dayKey, mealForHour, type MealType } from "./diary";
 import { DiaryProvider, useDiary } from "./store";
 import { useTheme } from "./theme";
+import { Icon, type IconName } from "./components/ui";
 import AddFood from "./screens/AddFood";
+import Body from "./screens/Body";
 import MyFoods from "./screens/MyFoods";
 import Onboarding from "./screens/Onboarding";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -15,12 +17,12 @@ import Training from "./screens/Training";
 
 type Tab = "today" | "progress" | "training" | "profile";
 
-const TABS: { id: Tab | "add"; icon: string; label: string }[] = [
-  { id: "today", icon: "🏠", label: "Bugun" },
-  { id: "progress", icon: "📊", label: "Hisobot" },
-  { id: "add", icon: "+", label: "" },
-  { id: "training", icon: "🏃", label: "Mashq" },
-  { id: "profile", icon: "👤", label: "Profil" },
+const TABS: { id: Tab | "add"; icon: IconName; label: string }[] = [
+  { id: "today", icon: "home", label: "Bugun" },
+  { id: "progress", icon: "chart", label: "Hisobot" },
+  { id: "add", icon: "plus", label: "" },
+  { id: "training", icon: "run", label: "Mashq" },
+  { id: "profile", icon: "user", label: "Profil" },
 ];
 
 function Shell() {
@@ -31,6 +33,7 @@ function Shell() {
   const [day, setDay] = useState(dayKey());
   const [adding, setAdding] = useState<MealType | null>(null);
   const [myFoods, setMyFoods] = useState(false);
+  const [body, setBody] = useState(false);
 
   if (!ready) {
     return (
@@ -41,8 +44,10 @@ function Shell() {
   }
   if (!state.profile) return <Onboarding onDone={(p) => dispatch({ type: "setProfile", profile: p })} />;
 
+  const on = (id: string) => tab === id && !adding && !myFoods && !body;
   const openAdd = (meal?: MealType) => {
     setMyFoods(false);
+    setBody(false);
     setTab("today");
     setAdding(meal ?? mealForHour(new Date().getHours()));
   };
@@ -50,18 +55,20 @@ function Shell() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={{ flex: 1 }}>
-        {myFoods ? (
+        {body ? (
+          <Body onClose={() => setBody(false)} />
+        ) : myFoods ? (
           <MyFoods onClose={() => setMyFoods(false)} />
         ) : adding ? (
           <AddFood day={day} meal={adding} onClose={() => setAdding(null)} onMyFoods={() => setMyFoods(true)} />
         ) : tab === "today" ? (
           <Today day={day} setDay={setDay} onAdd={openAdd} />
         ) : tab === "progress" ? (
-          <Progress />
+          <Progress onBody={() => setBody(true)} />
         ) : tab === "training" ? (
           <Training />
         ) : (
-          <ProfileScreen onMyFoods={() => setMyFoods(true)} />
+          <ProfileScreen onMyFoods={() => setMyFoods(true)} onBody={() => setBody(true)} />
         )}
       </View>
 
@@ -70,7 +77,12 @@ function Shell() {
           flexDirection: "row",
           backgroundColor: t.card,
           borderTopColor: t.border,
-          borderTopWidth: 1,
+          borderTopWidth: t.dark ? 1 : 0,
+          shadowColor: "#0b1a12",
+          shadowOpacity: t.dark ? 0 : 0.06,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: -4 },
+          elevation: 8,
           paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
         }}
@@ -89,14 +101,14 @@ function Shell() {
                   backgroundColor: t.accent,
                   alignItems: "center",
                   justifyContent: "center",
-                  shadowColor: "#000",
-                  shadowOpacity: 0.2,
+                  shadowColor: t.accent,
+                  shadowOpacity: 0.45,
                   shadowRadius: 8,
                   shadowOffset: { width: 0, height: 4 },
                   elevation: 6,
                 }}
               >
-                <Text style={{ color: t.accentInk, fontSize: 32, fontWeight: "600", lineHeight: 36 }}>+</Text>
+                <Icon name="plus" size={28} color={t.accentInk} stroke={2.8} />
               </Pressable>
             </View>
           ) : (
@@ -105,14 +117,15 @@ function Shell() {
               onPress={() => {
                 setAdding(null);
                 setMyFoods(false);
+                setBody(false);
                 setTab(x.id as Tab);
               }}
               style={{ flex: 1, alignItems: "center", paddingVertical: 4 }}
               accessibilityRole="tab"
-              accessibilityState={{ selected: tab === x.id && !adding }}
+              accessibilityState={{ selected: on(x.id) }}
             >
-              <Text style={{ fontSize: 20, opacity: tab === x.id && !adding ? 1 : 0.5 }}>{x.icon}</Text>
-              <Text style={{ fontSize: 11, color: tab === x.id && !adding ? t.text : t.muted, fontWeight: "600" }}>{x.label}</Text>
+              <Icon name={x.icon} size={24} color={on(x.id) ? t.accent : t.faint} stroke={on(x.id) ? 2.4 : 2} />
+              <Text style={{ fontSize: 11, marginTop: 3, color: on(x.id) ? t.text : t.faint, fontWeight: on(x.id) ? "800" : "600" }}>{x.label}</Text>
             </Pressable>
           ),
         )}

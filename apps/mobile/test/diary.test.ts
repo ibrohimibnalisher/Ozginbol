@@ -80,3 +80,27 @@ describe("custom foods", () => {
     expect(offToFood("1", { product_name: "x", nutriments: {} })).toBeNull();
   });
 });
+
+describe("body measurements", () => {
+  const profile = { sex: "male" as const, age: 30, heightCm: 178, weightKg: 85, activity: "light" as const, goal: "cut" as const };
+  it("stores a measurement, updates weight and body fat used for targets", () => {
+    let s = reducer(EMPTY, { type: "setProfile", profile });
+    const before = targetsOf(s)!;
+    s = reducer(s, { type: "measure", m: { day: dayKey(), neckCm: 39, waistCm: 92, weightKg: 84, bodyFatPct: 20.9 } });
+    expect(s.measurements).toHaveLength(1);
+    expect(s.profile!.bodyFatPct).toBe(20.9);
+    expect(s.profile!.weightKg).toBe(84);
+    expect(targetsOf(s)!.bmrFormula).toBe("katch");
+    expect(before.bmrFormula).toBe("mifflin");
+  });
+  it("replaces the same day and keeps an older entry from overriding the profile", () => {
+    let s = reducer(EMPTY, { type: "setProfile", profile });
+    s = reducer(s, { type: "measure", m: { day: dayKey(), neckCm: 39, waistCm: 92, weightKg: 84, bodyFatPct: 20.9 } });
+    s = reducer(s, { type: "measure", m: { day: dayKey(), neckCm: 39, waistCm: 91, weightKg: 84, bodyFatPct: 20.3 } });
+    s = reducer(s, { type: "measure", m: { day: shiftDay(dayKey(), -14), neckCm: 39, waistCm: 96, weightKg: 88, bodyFatPct: 23 } });
+    expect(s.measurements.map((m) => m.bodyFatPct)).toEqual([23, 20.3]);
+    expect(s.profile!.bodyFatPct).toBe(20.3);
+    s = reducer(s, { type: "removeMeasure", day: dayKey() });
+    expect(s.measurements).toHaveLength(1);
+  });
+});
