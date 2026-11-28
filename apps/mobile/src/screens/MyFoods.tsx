@@ -125,7 +125,7 @@ export default function MyFoods({ onClose }: { onClose: () => void }) {
             {field("Yog', g", "fat")}
             {field("Uglevod, g", "carbs")}
           </Row>
-          {field("1 dona og'irligi, g", "portion", per === "100" ? tr("ixtiyoriy") : "majburiy")}
+          {field("1 dona og'irligi, g", "portion", per === "100" ? tr("ixtiyoriy") : tr("majburiy"))}
           <Button title={tr("Saqlash")} onPress={addProduct} disabled={!name.trim()} />
         </Card>
       )}

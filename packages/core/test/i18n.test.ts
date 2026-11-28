@@ -11,3 +11,21 @@ describe("i18n", () => {
     expect(t("en", "Sarf (TDEE): 1650 × 1.375 (faollik) = 2269 kkal")).toBe("Burn (TDEE): 1650 × 1.375 (activity) = 2269 kcal");
   });
 });
+
+describe("dictionaries", () => {
+  it("translate every collected UI string to Russian and English", async () => {
+    const { readFileSync } = await import("node:fs");
+    const keys: string[] = JSON.parse(readFileSync(new URL("../src/i18n/keys.json", import.meta.url), "utf8"));
+    const { RU } = await import("../src/i18n/ru");
+    const { EN } = await import("../src/i18n/en");
+    expect(keys.filter((k) => !RU[k])).toEqual([]);
+    expect(keys.filter((k) => !EN[k])).toEqual([]);
+  });
+
+  it("keeps placeholders in every translation", async () => {
+    const { RU } = await import("../src/i18n/ru");
+    const { EN } = await import("../src/i18n/en");
+    const ph = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join();
+    for (const d of [RU, EN]) for (const [k, v] of Object.entries(d)) expect(ph(v), k).toBe(ph(k));
+  });
+});

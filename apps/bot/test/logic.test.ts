@@ -166,7 +166,7 @@ describe("goals, custom foods and sources", () => {
     onboard();
     const r = newRecipe(store, user(), "Uy oshi: 1 kg guruch, 1 kg mol go'shti, 250 g yog', 1 kg sabzi | 4500 | 12");
     expect(r.text).toContain("Guruch (xom)");
-    expect(r.text).toContain("1 porsiya (375 g)");
+    expect(r.text).toContain("1 porsiya 375 g");
     expect(handleText(store, user(), "1 porsiya uy oshi").text).toContain("Uy oshi");
   });
 

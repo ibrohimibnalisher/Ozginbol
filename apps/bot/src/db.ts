@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
-import type { Activity, Food, Goal, Macros, ParsedItem, Profile, Sex, UnitKey } from "@ozginbol/core";
+import type { Activity, Food, Goal, Lang, Macros, ParsedItem, Profile, Sex, UnitKey } from "@ozginbol/core";
+import { isLang } from "@ozginbol/core";
 
 export type Step = "sex" | "age" | "height" | "weight" | "activity" | "goal" | "rate" | "target" | "done";
 
@@ -17,6 +18,7 @@ export interface User {
   targetWeightKg: number | null;
   bodyFatPct: number | null;
   remind: number;
+  lang: Lang;
 }
 
 export interface Measurement {
@@ -113,6 +115,7 @@ function toUser(r: Row): User {
     targetWeightKg: (r.target_weight as number) ?? null,
     bodyFatPct: (r.body_fat as number) ?? null,
     remind: Number(r.remind ?? 1),
+    lang: isLang(r.lang) ? r.lang : "uz",
   };
 }
 
@@ -137,7 +140,7 @@ function toEntry(r: Row): Entry {
 
 const COLS: Record<string, string> = {
   name: "name", step: "step", sex: "sex", age: "age", heightCm: "height_cm", weightKg: "weight_kg",
-  activity: "activity", goal: "goal", remind: "remind", rateKgPerWeek: "rate", targetWeightKg: "target_weight", bodyFatPct: "body_fat",
+  activity: "activity", goal: "goal", remind: "remind", rateKgPerWeek: "rate", targetWeightKg: "target_weight", bodyFatPct: "body_fat", lang: "lang",
 };
 
 /**
@@ -152,7 +155,7 @@ export class Store {
     this.db.exec("PRAGMA journal_mode = WAL;");
     this.db.exec(SCHEMA);
     // Columns added after the first release.
-    for (const col of ["rate REAL", "target_weight REAL", "body_fat REAL"]) {
+    for (const col of ["rate REAL", "target_weight REAL", "body_fat REAL", "lang TEXT NOT NULL DEFAULT 'uz'"]) {
       try {
         this.db.exec(`ALTER TABLE users ADD COLUMN ${col}`);
       } catch {
