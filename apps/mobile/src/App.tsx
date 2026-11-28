@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { dayKey, mealForHour, type MealType } from "./diary";
-import { DiaryProvider, useDiary } from "./store";
+import { DiaryProvider, useDiary, useT } from "./store";
 import { useTheme } from "./theme";
 import { Icon, type IconName } from "./components/ui";
 import AddFood from "./screens/AddFood";
@@ -11,6 +11,7 @@ import Body from "./screens/Body";
 import Menu from "./screens/Menu";
 import MyFoods from "./screens/MyFoods";
 import Onboarding from "./screens/Onboarding";
+import Photos from "./screens/Photos";
 import ProfileScreen from "./screens/ProfileScreen";
 import Progress from "./screens/Progress";
 import Today from "./screens/Today";
@@ -30,12 +31,14 @@ function Shell() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { state, dispatch, ready } = useDiary();
+  const { tr } = useT();
   const [tab, setTab] = useState<Tab>("today");
   const [day, setDay] = useState(dayKey());
   const [adding, setAdding] = useState<MealType | null>(null);
   const [myFoods, setMyFoods] = useState(false);
   const [body, setBody] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [photos, setPhotos] = useState(false);
 
   if (!ready) {
     return (
@@ -46,11 +49,12 @@ function Shell() {
   }
   if (!state.profile) return <Onboarding onDone={(p) => dispatch({ type: "setProfile", profile: p })} />;
 
-  const on = (id: string) => tab === id && !adding && !myFoods && !body && !menu;
+  const on = (id: string) => tab === id && !adding && !myFoods && !body && !menu && !photos;
   const openAdd = (meal?: MealType) => {
     setMyFoods(false);
     setBody(false);
     setMenu(false);
+    setPhotos(false);
     setTab("today");
     setAdding(meal ?? mealForHour(new Date().getHours()));
   };
@@ -58,7 +62,9 @@ function Shell() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={{ flex: 1 }}>
-        {menu ? (
+        {photos ? (
+          <Photos onClose={() => setPhotos(false)} />
+        ) : menu ? (
           <Menu day={day} onClose={() => setMenu(false)} />
         ) : body ? (
           <Body onClose={() => setBody(false)} />
@@ -69,11 +75,11 @@ function Shell() {
         ) : tab === "today" ? (
           <Today day={day} setDay={setDay} onAdd={openAdd} onMenu={() => setMenu(true)} />
         ) : tab === "progress" ? (
-          <Progress onBody={() => setBody(true)} />
+          <Progress onBody={() => setBody(true)} onPhotos={() => setPhotos(true)} />
         ) : tab === "training" ? (
           <Training />
         ) : (
-          <ProfileScreen onMyFoods={() => setMyFoods(true)} onBody={() => setBody(true)} />
+          <ProfileScreen onMyFoods={() => setMyFoods(true)} onBody={() => setBody(true)} onPhotos={() => setPhotos(true)} />
         )}
       </View>
 
@@ -97,7 +103,7 @@ function Shell() {
             <View key="add" style={{ flex: 1, alignItems: "center" }}>
               <Pressable
                 onPress={() => openAdd()}
-                accessibilityLabel="Ovqat qo'shish"
+                accessibilityLabel={tr("Ovqat qo'shish")}
                 style={{
                   width: 56,
                   height: 56,
@@ -124,6 +130,7 @@ function Shell() {
                 setMyFoods(false);
                 setBody(false);
                 setMenu(false);
+                setPhotos(false);
                 setTab(x.id as Tab);
               }}
               style={{ flex: 1, alignItems: "center", paddingVertical: 4 }}
@@ -131,7 +138,7 @@ function Shell() {
               accessibilityState={{ selected: on(x.id) }}
             >
               <Icon name={x.icon} size={24} color={on(x.id) ? t.accent : t.faint} stroke={on(x.id) ? 2.4 : 2} />
-              <Text style={{ fontSize: 11, marginTop: 3, color: on(x.id) ? t.text : t.faint, fontWeight: on(x.id) ? "800" : "600" }}>{x.label}</Text>
+              <Text style={{ fontSize: 11, marginTop: 3, color: on(x.id) ? t.text : t.faint, fontWeight: on(x.id) ? "800" : "600" }}>{tr(x.label)}</Text>
             </Pressable>
           ),
         )}

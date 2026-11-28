@@ -163,3 +163,32 @@ describe("habits and planning", () => {
     expect(s.fasting.history).toEqual([]);
   });
 });
+
+describe("progress photos", () => {
+  it("pairs first and latest photo per pose with weight change", async () => {
+    const { reducer, EMPTY, photoPair } = await import("../src/diary");
+    let s = reducer(EMPTY, { type: "addPhoto", photo: { day: "2026-10-01", uri: "a", pose: "front", weightKg: 82 } });
+    s = reducer(s, { type: "addPhoto", photo: { day: "2026-11-12", uri: "c", pose: "front", weightKg: 78.4 } });
+    s = reducer(s, { type: "addPhoto", photo: { day: "2026-10-20", uri: "b", pose: "front", weightKg: 80 } });
+    s = reducer(s, { type: "addPhoto", photo: { day: "2026-10-20", uri: "s", pose: "side" } });
+    const p = photoPair(s, "front");
+    expect(p.before?.uri).toBe("a");
+    expect(p.after?.uri).toBe("c");
+    expect(p.days).toBe(42);
+    expect(p.kg).toBe(-3.6);
+    expect(photoPair(s, "side").after).toBeUndefined();
+    const picked = photoPair(s, "front", undefined, s.photos.find((x) => x.uri === "b")!.id);
+    expect(picked.kg).toBe(-2);
+    s = reducer(s, { type: "removePhoto", id: s.photos[0]!.id });
+    expect(s.photos).toHaveLength(3);
+  });
+  it("old saves load without photos and with Uzbek UI", async () => {
+    const { reducer, EMPTY } = await import("../src/diary");
+    const old = { ...EMPTY, settings: { reminders: true } } as unknown as typeof EMPTY;
+    delete (old as Partial<typeof EMPTY>).photos;
+    const s = reducer(EMPTY, { type: "load", state: old });
+    expect(s.photos).toEqual([]);
+    expect(s.settings.lang).toBe("uz");
+    expect(s.settings.reminders).toBe(true);
+  });
+});

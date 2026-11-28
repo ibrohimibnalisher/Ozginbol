@@ -1,5 +1,8 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import { translator, type Tr } from "@ozginbol/core";
+
+const UZ = translator("uz");
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
@@ -26,7 +29,7 @@ async function permitted(): Promise<boolean> {
 }
 
 /** Turns the daily meal and water reminders on or off. Returns false if the phone did not allow notifications. */
-export async function setDailyReminders(on: boolean): Promise<boolean> {
+export async function setDailyReminders(on: boolean, tr: Tr = UZ): Promise<boolean> {
   if (Platform.OS === "web") return false;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(scheduled.filter((n) => n.content.data?.kind === "daily").map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));
@@ -34,7 +37,7 @@ export async function setDailyReminders(on: boolean): Promise<boolean> {
   if (!(await permitted())) return false;
   for (const [hour, minute, title, body] of DAILY) {
     await Notifications.scheduleNotificationAsync({
-      content: { title, body, data: { kind: "daily" } },
+      content: { title: tr(title), body: tr(body), data: { kind: "daily" } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
     });
   }
@@ -42,12 +45,12 @@ export async function setDailyReminders(on: boolean): Promise<boolean> {
 }
 
 /** Notifies when a fast reaches its goal. */
-export async function scheduleFastEnd(at: number): Promise<void> {
+export async function scheduleFastEnd(at: number, tr: Tr = UZ): Promise<void> {
   if (Platform.OS === "web" || at <= Date.now()) return;
   await cancelFastEnd();
   if (!(await permitted())) return;
   await Notifications.scheduleNotificationAsync({
-    content: { title: "Ochlik yakunlandi 🎉", body: "Maqsadga yetdingiz. Ovqatni yengil, oqsilli taomdan boshlang.", data: { kind: "fast" } },
+    content: { title: tr("Ochlik yakunlandi 🎉"), body: tr("Maqsadga yetdingiz. Ovqatni yengil, oqsilli taomdan boshlang."), data: { kind: "fast" } },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(at) },
   });
 }

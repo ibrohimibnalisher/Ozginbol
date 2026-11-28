@@ -1,4 +1,5 @@
-import type { AdaptiveResult, DayScore, Food, HabitStats, Macros, ParsedItem, Profile, Targets, UnitKey } from "@ozginbol/core";
+import type { AdaptiveResult, Lang, DayScore, Food, HabitStats, Macros, ParsedItem, Profile, Targets, UnitKey } from "@ozginbol/core";
+import { translator, type Tr } from "@ozginbol/core";
 import { adaptiveTdee, caloriesBurned, computeTargets, dayScore, getFood } from "@ozginbol/core";
 
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
@@ -53,7 +54,20 @@ export interface SavedMeal {
   text: string;
 }
 
+export type Pose = "front" | "side" | "back";
+
+export interface ProgressPhoto {
+  id: string;
+  day: string;
+  /** file:// in the app's documents folder (or a data: URI on web). */
+  uri: string;
+  pose: Pose;
+  /** Weight on that day, if known, so the comparison can show the change. */
+  weightKg?: number;
+}
+
 export interface Settings {
+  lang: Lang;
   reminders: boolean;
   fastingHours: number;
   stepGoal: number;
@@ -74,6 +88,8 @@ export interface DiaryState {
   savedMeals: SavedMeal[];
   steps: Record<string, number>;
   settings: Settings;
+  /** Progress photos, stored only on this phone. */
+  photos: ProgressPhoto[];
 }
 
 export const EMPTY: DiaryState = { version: 1, profile: null, entries: [], water: {}, weights: [], workouts: [],
@@ -82,7 +98,8 @@ export const EMPTY: DiaryState = { version: 1, profile: null, entries: [], water
   fasting: { active: null, history: [] },
   savedMeals: [],
   steps: {},
-  settings: { reminders: false, fastingHours: 16, stepGoal: 10000 },
+  photos: [],
+  settings: { lang: "uz", reminders: false, fastingHours: 16, stepGoal: 10000 },
 };
 
 /** Local calendar day, YYYY-MM-DD. */
@@ -128,13 +145,15 @@ export type Action =
   | { type: "removeSavedMeal"; id: string }
   | { type: "steps"; day: string; steps: number }
   | { type: "settings"; patch: Partial<Settings> }
+  | { type: "addPhoto"; photo: Omit<ProgressPhoto, "id"> }
+  | { type: "removePhoto"; id: string }
   | { type: "removeMeasure"; day: string }
   | { type: "reset" };
 
 export function reducer(s: DiaryState, a: Action): DiaryState {
   switch (a.type) {
     case "load":
-      return { ...EMPTY, ...a.state, settings: { ...EMPTY.settings, ...(a.state.settings ?? {}) }, fasting: a.state.fasting ?? EMPTY.fasting };
+      return { ...EMPTY, ...a.state, settings: { ...EMPTY.settings, ...(a.state.settings ?? {}) }, fasting: a.state.fasting ?? EMPTY.fasting, photos: a.state.photos ?? [] };
     case "setProfile": {
       const day = dayKey();
       const weights = s.weights.filter((w) => w.day !== day).concat({ day, kg: a.profile.weightKg }).sort((x, y) => x.day.localeCompare(y.day));
@@ -213,6 +232,10 @@ export function reducer(s: DiaryState, a: Action): DiaryState {
       return { ...s, steps: { ...s.steps, [a.day]: Math.max(0, Math.round(a.steps)) } };
     case "settings":
       return { ...s, settings: { ...s.settings, ...a.patch } };
+    case "addPhoto":
+      return { ...s, photos: [...s.photos, { ...a.photo, id: uid() }].sort((x, y) => x.day.localeCompare(y.day)) };
+    case "removePhoto":
+      return { ...s, photos: s.photos.filter((p) => p.id !== a.id) };
     case "reset":
       return EMPTY;
   }
@@ -275,14 +298,14 @@ export function streak(s: DiaryState, today = dayKey()): number {
   return n;
 }
 
-export function tips(sum: DaySummary, t: Targets | null, hour = new Date().getHours()): string[] {
+export function tips(sum: DaySummary, t: Targets | null, hour = new Date().getHours(), tr: Tr = translator("uz")): string[] {
   if (!t || !sum.entries.length) return [];
   const out: string[] = [];
   const budget = t.calories + sum.burned;
-  if (sum.food.kcal > budget + 100) out.push(`Me'yordan ${Math.round(sum.food.kcal - budget)} kkal oshdi. Kechqurun 30-40 daqiqa tez yurish yordam beradi.`);
-  if (hour >= 15 && sum.food.protein < t.protein * 0.5) out.push("Oqsil kam: tuxum, tovuq ko'kragi, tvorog yoki qatiq qo'shing.");
-  if (sum.food.fat > t.fat * 1.15) out.push("Yog' ko'p. Osh va somsani yarim porsiya qilib, salat bilan yeng.");
-  if (hour >= 14 && sum.waterMl < t.waterMl * 0.5) out.push("Suv kam ichilyapti. Har ovqatdan oldin 1 stakan suv iching.");
+  if (sum.food.kcal > budget + 100) out.push(tr("Me'yordan {n} kkal oshdi. Kechqurun 30-40 daqiqa tez yurish yordam beradi.", { n: Math.round(sum.food.kcal - budget) }));
+  if (hour >= 15 && sum.food.protein < t.protein * 0.5) out.push(tr("Oqsil kam: tuxum, tovuq ko'kragi, tvorog yoki qatiq qo'shing."));
+  if (sum.food.fat > t.fat * 1.15) out.push(tr("Yog' ko'p. Osh va somsani yarim porsiya qilib, salat bilan yeng."));
+  if (hour >= 14 && sum.waterMl < t.waterMl * 0.5) out.push(tr("Suv kam ichilyapti. Har ovqatdan oldin 1 stakan suv iching."));
   return out.slice(0, 2);
 }
 
@@ -359,4 +382,21 @@ export function toCsv(s: DiaryState): string {
     .sort((a, b) => a.day.localeCompare(b.day) || a.at - b.at)
     .map((e) => [e.day, meal[e.meal], q(e.name), e.grams, Math.round(e.kcal), e.protein.toFixed(1), e.fat.toFixed(1), e.carbs.toFixed(1)].join(","));
   return ["Sana,Ovqat,Taom,Gramm,Kkal,Oqsil,Yog',Uglevod", ...rows].join("\n");
+}
+
+/** Weight on a day: the last weigh-in on or before it, else the profile weight. */
+export function weightOn(s: DiaryState, day: string): number | undefined {
+  let kg: number | undefined;
+  for (const w of s.weights) if (w.day <= day) kg = w.kg;
+  return kg ?? s.profile?.weightKg;
+}
+
+/** Before/after pair for one pose: first and latest photo, or the ones picked. */
+export function photoPair(s: DiaryState, pose: Pose, beforeId?: string, afterId?: string): { before?: ProgressPhoto; after?: ProgressPhoto; days: number; kg: number | null } {
+  const list = s.photos.filter((p) => p.pose === pose);
+  const before = list.find((p) => p.id === beforeId) ?? list[0];
+  const after = list.find((p) => p.id === afterId) ?? (list.length > 1 ? list[list.length - 1] : undefined);
+  const days = before && after ? Math.round((Date.parse(after.day) - Date.parse(before.day)) / 86400000) : 0;
+  const kg = before?.weightKg !== undefined && after?.weightKg !== undefined ? Math.round((after.weightKg - before.weightKg) * 10) / 10 : null;
+  return { before, after, days, kg };
 }

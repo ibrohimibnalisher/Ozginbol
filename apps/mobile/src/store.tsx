@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useReducer, useRef, useState, type Dispatch, type ReactNode } from "react";
+import { translator, type Lang, type Tr } from "@ozginbol/core";
 import { EMPTY, reducer, type Action, type DiaryState } from "./diary";
 import { loadState, saveState } from "./storage";
 
@@ -28,4 +29,11 @@ export function useDiary() {
   const v = useContext(Ctx);
   if (!v) throw new Error("useDiary outside DiaryProvider");
   return v;
+}
+
+/** Translator bound to the language chosen in Profile. */
+export function useT(): { tr: Tr; lang: Lang } {
+  const { state } = useDiary();
+  const lang = state.settings.lang ?? "uz";
+  return { tr: translator(lang), lang };
 }

@@ -25,7 +25,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Mahsulot shtrix-kodini skanerlash uchun kamera kerak.",
+          "cameraPermission": "Shtrix-kodni skanerlash va progress rasmlarini olish uchun kamera kerak.",
           "recordAudioAndroid": false
         }
       ],
@@ -35,7 +35,14 @@
           "motionPermission": "Qadamlaringizni hisoblash uchun harakat ma'lumoti kerak."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Progress rasmlarini galereyadan tanlash uchun ruxsat kerak.",
+          "cameraPermission": "Progress rasmlarini olish uchun kamera kerak."
+        }
+      ]
     ]
   }
 }

@@ -2,11 +2,13 @@ import { useRef } from "react";
 import { Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Button, Muted } from "../components/ui";
+import { useT } from "../store";
 import { useTheme } from "../theme";
 
 /** Full-screen barcode scanner (EAN-13 / EAN-8 / UPC on food packages). */
 export default function Scanner({ onCode, onCancel }: { onCode: (code: string) => void; onCancel: () => void }) {
   const t = useTheme();
+  const { tr } = useT();
   const [permission, requestPermission] = useCameraPermissions();
   const done = useRef(false);
 
@@ -14,10 +16,10 @@ export default function Scanner({ onCode, onCancel }: { onCode: (code: string) =
   if (!permission.granted) {
     return (
       <View style={{ flex: 1, padding: 24, justifyContent: "center", gap: 14, backgroundColor: t.bg }}>
-        <Text style={{ color: t.text, fontSize: 18, fontWeight: "700" }}>Kameraga ruxsat kerak</Text>
-        <Muted>Shtrix-kodni o'qish uchun kamera ishlatiladi. Rasm saqlanmaydi.</Muted>
-        <Button title="Ruxsat berish" onPress={requestPermission} />
-        <Button kind="ghost" title="Bekor qilish" onPress={onCancel} />
+        <Text style={{ color: t.text, fontSize: 18, fontWeight: "700" }}>{tr("Kameraga ruxsat kerak")}</Text>
+        <Muted>{tr("Shtrix-kodni o'qish uchun kamera ishlatiladi. Rasm saqlanmaydi.")}</Muted>
+        <Button title={tr("Ruxsat berish")} onPress={requestPermission} />
+        <Button kind="ghost" title={tr("Bekor qilish")} onPress={onCancel} />
       </View>
     );
   }
@@ -35,9 +37,9 @@ export default function Scanner({ onCode, onCancel }: { onCode: (code: string) =
         }}
       />
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 40, alignItems: "center", gap: 12 }}>
-        <Text style={{ color: "#fff", fontSize: 16 }}>Shtrix-kodni ramkaga to'g'rilang</Text>
+        <Text style={{ color: "#fff", fontSize: 16 }}>{tr("Shtrix-kodni ramkaga to'g'rilang")}</Text>
         <View style={{ width: 200 }}>
-          <Button kind="ghost" title="Bekor qilish" onPress={onCancel} />
+          <Button kind="ghost" title={tr("Bekor qilish")} onPress={onCancel} />
         </View>
       </View>
     </View>
