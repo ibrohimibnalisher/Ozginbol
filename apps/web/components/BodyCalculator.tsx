@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "./i18n";
 import { useEffect, useMemo, useState } from "react";
 import type { FatCategory, Measurements, Profile, Sex } from "@ozginbol/core";
 import { FAT_CATEGORY_BOUNDS, FAT_CATEGORY_LABELS, MEASURE_TIPS, RISK_LABELS, bodyComposition, measurementError } from "@ozginbol/core";
@@ -54,6 +55,7 @@ export default function BodyCalculator({
   onHistory: (h: BodyEntry[]) => void;
   onUseFat: (pct: number) => void;
 }) {
+  const { tr } = useT();
   const last = history[history.length - 1];
   const [f, setF] = useState<Form>({ sex: "male", age: "28", heightCm: "175", weightKg: "75", neckCm: "", waistCm: "", hipCm: "" });
   const [msg, setMsg] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export default function BodyCalculator({
     if (!b) return;
     const entry: BodyEntry = { date: today(), weightKg: m.weightKg, neckCm: m.neckCm, waistCm: m.waistCm, hipCm: m.hipCm, bodyFatPct: b.bodyFatPct };
     onHistory([...history.filter((h) => h.date !== entry.date), entry].sort((a, c) => a.date.localeCompare(c.date)).slice(-60));
-    setMsg("O'lchov saqlandi");
+    setMsg(tr("O'lchov saqlandi"));
     setTimeout(() => setMsg(null), 1800);
   };
 
@@ -110,37 +112,37 @@ export default function BodyCalculator({
         <div className="form">
           <label className="full">
             Jins
-            <div className="seg" role="radiogroup" aria-label="Jins">
+            <div className="seg" role="radiogroup" aria-label={tr("Jins")}>
               {(["male", "female"] as Sex[]).map((x) => (
                 <button type="button" key={x} role="radio" aria-checked={f.sex === x} className={f.sex === x ? "on" : ""} onClick={() => setF({ ...f, sex: x })}>
-                  {x === "male" ? "Erkak" : "Ayol"}
+                  {x === "male" ? tr("Erkak") : tr("Ayol")}
                 </button>
               ))}
             </div>
           </label>
           <label>
-            Yosh
+            {tr("Yosh")}
             <input type="number" inputMode="numeric" value={f.age} onChange={set("age")} />
           </label>
           <label>
-            Bo'y, sm
+            {tr("Bo'y, sm")}
             <input type="number" inputMode="numeric" value={f.heightCm} onChange={set("heightCm")} />
           </label>
           <label>
-            Vazn, kg
+            {tr("Vazn, kg")}
             <input type="number" inputMode="decimal" step="0.1" value={f.weightKg} onChange={set("weightKg")} />
           </label>
           <label>
-            Bo'yin, sm
+            {tr("Bo'yin, sm")}
             <input type="number" inputMode="decimal" step="0.5" value={f.neckCm} onChange={set("neckCm")} placeholder="38" />
           </label>
           <label>
-            Bel, sm
+            {tr("Bel, sm")}
             <input type="number" inputMode="decimal" step="0.5" value={f.waistCm} onChange={set("waistCm")} placeholder="85" />
           </label>
           {f.sex === "female" ? (
             <label>
-              Son, sm
+              {tr("Son, sm")}
               <input type="number" inputMode="decimal" step="0.5" value={f.hipCm} onChange={set("hipCm")} placeholder="98" />
             </label>
           ) : (
@@ -151,34 +153,34 @@ export default function BodyCalculator({
           <ul className="tips">
             {MEASURE_TIPS.filter((t) => t.key !== "hip" || f.sex === "female").map((t) => (
               <li key={t.key}>
-                <b>{t.label}:</b> {t.tip}
+                <b>{tr(t.label)}:</b> {tr(t.tip)}
               </li>
             ))}
-            <li>Ertalab, och qoringa, bir xil joyda o'lchang. Haftada bir marta yetarli.</li>
+            <li>{tr("Ertalab, och qoringa, bir xil joyda o'lchang. Haftada bir marta yetarli.")}</li>
           </ul>
         </div>
       </div>
 
       <div className="card result-card">
-        {!filled && <p className="note" style={{ margin: 0 }}>Bo'yin va bel aylanasini kiriting{f.sex === "female" ? ", ayollar son aylanasini ham" : ""}: natija shu yerda chiqadi.</p>}
-        {error && <p className="warn">{error}</p>}
+        {!filled && <p className="note" style={{ margin: 0 }}>{tr(f.sex === "female" ? "Bo'yin, bel va son aylanasini kiriting: natija shu yerda chiqadi." : "Bo'yin va bel aylanasini kiriting: natija shu yerda chiqadi.")}</p>}
+        {error && <p className="warn">{tr(error)}</p>}
         {b && (
           <>
             <div className="big-kcal">
-              <Ring value={b.bodyFatPct} max={hi} color={BAND_COLORS[b.category]} size={136} label={`${b.bodyFatPct}%`} sub="yog' foizi" />
+              <Ring value={b.bodyFatPct} max={hi} color={BAND_COLORS[b.category]} size={136} label={`${b.bodyFatPct}%`} sub={tr("yog' foizi")} />
               <div>
-                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>{FAT_CATEGORY_LABELS[b.category]}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>{tr(FAT_CATEGORY_LABELS[b.category])}</div>
                 <div className="note" style={{ marginTop: 4 }}>
-                  Sog'lom oraliq: {b.healthyRange[0]}-{b.healthyRange[1]}%
-                  {b.bmiEstimatePct !== undefined && <> · TMI bo'yicha taxmin {b.bmiEstimatePct}%</>}
+                  {tr("Sog'lom oraliq: {a}-{b}%", { a: b.healthyRange[0], b: b.healthyRange[1] })}
+                  {b.bmiEstimatePct !== undefined && <> · {tr("TMI bo'yicha taxmin: {n}%", { n: b.bmiEstimatePct })}</>}
                 </div>
               </div>
             </div>
 
-            <div className="scale" aria-label={`Yog' foizi shkalasi, ${b.bodyFatPct}%`}>
+            <div className="scale" aria-label={`${tr("Yog' foizi shkalasi")}, ${b.bodyFatPct}%`}>
               <div className="bands">
                 {bands.map((x) => (
-                  <i key={x.cat} style={{ width: `${x.w}%`, background: BAND_COLORS[x.cat] }} title={FAT_CATEGORY_LABELS[x.cat]} />
+                  <i key={x.cat} style={{ width: `${x.w}%`, background: BAND_COLORS[x.cat] }} title={tr(FAT_CATEGORY_LABELS[x.cat])} />
                 ))}
               </div>
               <div className="marker" style={{ left: pos(b.bodyFatPct) }} />
@@ -190,7 +192,7 @@ export default function BodyCalculator({
                 {bands.map((x) => (
                   <span key={x.cat} className={x.cat === b.category ? "on" : ""}>
                     <i style={{ background: BAND_COLORS[x.cat] }} />
-                    {FAT_CATEGORY_LABELS[x.cat]}
+                    {tr(FAT_CATEGORY_LABELS[x.cat])}
                   </span>
                 ))}
               </div>
@@ -199,41 +201,41 @@ export default function BodyCalculator({
             <div className="kv">
               <div>
                 <b>{b.fatMassKg} kg</b>
-                <span>yog' massasi</span>
+                <span>{tr("yog' massasi")}</span>
               </div>
               <div>
                 <b>{b.leanMassKg} kg</b>
-                <span>yog'siz massa</span>
+                <span>{tr("yog'siz massa")}</span>
               </div>
               <div>
                 <b>{b.waistToHeight.toFixed(2)}</b>
                 <span>
-                  bel ÷ bo'y <span className={`risk ${b.whtrRisk}`}>{RISK_LABELS[b.whtrRisk]}</span>
+                  {tr("bel ÷ bo'y")} <span className={`risk ${b.whtrRisk}`}>{tr(RISK_LABELS[b.whtrRisk])}</span>
                 </span>
               </div>
             </div>
             <p className="note" style={{ margin: 0 }}>
-              Bel aylanasi bo'yicha yurak-qon tomir xavfi: <span className={`risk ${b.waistRisk}`}>{RISK_LABELS[b.waistRisk]}</span>
-              {b.waistToHip !== undefined && <> · bel ÷ son = {b.waistToHip}</>}
+              {tr("Bel bo'yicha yurak-qon tomir xavfi")}: <span className={`risk ${b.waistRisk}`}>{tr(RISK_LABELS[b.waistRisk])}</span>
+              {b.waistToHip !== undefined && <> · {tr("bel ÷ son")} = {b.waistToHip}</>}
             </p>
 
             <details className="steps">
-              <summary>Qanday hisoblandi (US Navy usuli)</summary>
+              <summary>{tr("Qanday hisoblandi (US Navy usuli)")}</summary>
               <ol>
                 {b.steps.map((s) => (
-                  <li key={s}>{s}</li>
+                  <li key={s}>{tr(s)}</li>
                 ))}
               </ol>
-              <p className="note">Lenta usulining xatoligi odatda ±3-4%. Bir xil sharoitda o'lchasangiz, o'zgarish yo'nalishi aniq ko'rinadi.</p>
+              <p className="note">{tr("Lenta usulining xatoligi odatda ±3-4%. Bir xil sharoitda o'lchasangiz, o'zgarish yo'nalishi aniq ko'rinadi.")}</p>
             </details>
 
             <div className="actions">
               <button className="btn" onClick={saveEntry}>
-                {msg ?? "O'lchovni saqlash"}
+                {msg ?? tr("O'lchovni saqlash")}
               </button>
               {profile && (
-                <button className="btn ghost" onClick={() => onUseFat(b.bodyFatPct)} title="Katch-McArdle formulasi bilan aniqroq me'yor">
-                  {profile.bodyFatPct === b.bodyFatPct ? "Me'yorda ishlatilmoqda ✓" : "Kunlik me'yorda ishlatish"}
+                <button className="btn ghost" onClick={() => onUseFat(b.bodyFatPct)} title={tr("Katch-McArdle formulasi bilan aniqroq me'yor")}>
+                  {profile.bodyFatPct === b.bodyFatPct ? tr("Me'yorda ishlatilmoqda ✓") : tr("Kunlik me'yorda ishlatish")}
                 </button>
               )}
             </div>
@@ -242,16 +244,16 @@ export default function BodyCalculator({
 
         {history.length > 0 && (
           <div>
-            <div style={{ fontWeight: 800, margin: "6px 0 4px" }}>O'lchovlar tarixi</div>
+            <div style={{ fontWeight: 800, margin: "6px 0 4px" }}>{tr("O'lchovlar tarixi")}</div>
             <Sparkline values={history.map((h) => h.bodyFatPct)} />
             <table className="history">
               <thead>
                 <tr>
-                  <th>Sana</th>
-                  <th>Vazn</th>
-                  <th>Bel</th>
-                  <th>Bo'yin</th>
-                  <th>Yog'</th>
+                  <th>{tr("Sana")}</th>
+                  <th>{tr("Vazn")}</th>
+                  <th>{tr("Bel")}</th>
+                  <th>{tr("Bo'yin")}</th>
+                  <th>{tr("Yog'")}</th>
                   <th />
                 </tr>
               </thead>
@@ -269,7 +271,7 @@ export default function BodyCalculator({
                         <b>{h.bodyFatPct}%</b> {prev && d !== 0 && <span className={`delta ${d < 0 ? "down" : "up"}`}>{d > 0 ? `+${d}` : d}</span>}
                       </td>
                       <td>
-                        <button className="link" aria-label="O'chirish" onClick={() => onHistory(history.filter((x) => x.date !== h.date))}>
+                        <button className="link" aria-label={tr("O'chirish")} onClick={() => onHistory(history.filter((x) => x.date !== h.date))}>
                           ×
                         </button>
                       </td>

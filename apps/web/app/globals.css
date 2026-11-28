@@ -128,6 +128,9 @@ nav.links { display: flex; gap: 4px; font-size: 14px; font-weight: 600; }
 nav.links a { color: var(--hero-muted); text-decoration: none; padding: 8px 12px; border-radius: 999px; }
 nav.links a:hover { color: var(--hero-text); background: rgb(255 255 255 / 0.06); }
 .head-actions { display: flex; align-items: center; gap: 8px; }
+.lang-switch { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; border: 1px solid rgb(255 255 255 / 0.12); background: rgb(255 255 255 / 0.04); }
+.lang-switch button { border: 0; background: transparent; color: var(--hero-muted); font-size: 12px; font-weight: 800; padding: 6px 9px; border-radius: 999px; cursor: pointer; }
+.lang-switch button.on { background: var(--brand); color: #04110a; }
 .icon-btn {
   width: 38px; height: 38px; display: inline-grid; place-items: center; cursor: pointer;
   border-radius: 999px; border: 1px solid rgb(255 255 255 / 0.12); background: rgb(255 255 255 / 0.04); color: var(--hero-text);
@@ -400,3 +403,20 @@ footer .logo { color: var(--text); font-size: 17px; margin-bottom: 8px; }
 .menu-meal li span:last-child { color: var(--muted); white-space: nowrap; }
 @media (max-width: 960px) { .menu-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) { .menu-grid { grid-template-columns: 1fr; } }
+
+/* ── Vitamins & minerals ────────────────────── */
+.micros { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+.micros-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.micros-head b { font-size: 15px; }
+.micro-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+.micro { background: var(--surface-2); border-radius: 12px; padding: 8px 10px; }
+.micro .mn { font-size: 12px; color: var(--muted); font-weight: 700; }
+.micro .mv { font-size: 14px; font-weight: 800; }
+.micro .bar { height: 5px; border-radius: 3px; background: var(--surface-3); overflow: hidden; margin-top: 6px; }
+.micro .bar i { display: block; height: 100%; border-radius: 3px; background: var(--brand); }
+.micro.fair .bar i { background: var(--fat); }
+.micro.low .bar i { background: var(--carbs); }
+.micro.over .bar i { background: var(--danger); }
+.micro.over .mv { color: var(--danger); }
+.micro-hint { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.micro-hint b { color: var(--text); }

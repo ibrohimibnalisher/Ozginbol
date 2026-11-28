@@ -10,6 +10,7 @@ import FoodTable from "./FoodTable";
 import MyFoods from "./MyFoods";
 import MenuPlanner from "./MenuPlanner";
 import { Send } from "./Icons";
+import { useT } from "./i18n";
 
 const PROFILE_KEY = "ozginbol.profile.v1";
 const FOODS_KEY = "ozginbol.myfoods.v1";
@@ -33,18 +34,20 @@ function save(key: string, v: unknown) {
 }
 
 function Head({ tag, title, sub }: { tag: string; title: string; sub: string }) {
+  const { tr } = useT();
   return (
     <div className="sec-head">
       <div>
-        <div className="tag">{tag}</div>
-        <h2>{title}</h2>
-        <p>{sub}</p>
+        <div className="tag">{tr(tag)}</div>
+        <h2>{tr(title)}</h2>
+        <p>{tr(sub)}</p>
       </div>
     </div>
   );
 }
 
 export default function Home({ foodCount }: { foodCount: number }) {
+  const { tr } = useT();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [myFoods, setMyFoods] = useState<Food[]>([]);
   const [body, setBody] = useState<BodyEntry[]>([]);
@@ -75,34 +78,35 @@ export default function Home({ foodCount }: { foodCount: number }) {
       <section className="hero" id="hisoblash">
         <div className="wrap hero-grid">
           <div>
-            <span className="eyebrow">O'zbek taomlarini biladigan kaloriya kalkulyatori</span>
+            <span className="eyebrow">{tr("O'zbek taomlarini biladigan kaloriya kalkulyatori")}</span>
             <h1>
-              Nima yedingiz? <em>Yozing</em>, kaloriyasini darrov hisoblaymiz.
+              {tr("Nima yedingiz?")} <em>{tr("Yozing")}</em>
+              {tr(", kaloriyasini darrov hisoblaymiz.")}
             </h1>
             <p className="lead">
-              Osh, somsa, lag'mon va {foodCount} dan ortiq taom. O'zbekcha, kirillcha yoki ruscha yozing. Har bir raqamning qayerdan olingani ochiq.
+              {tr("Osh, somsa, lag'mon va {n} dan ortiq taom. O'zbekcha, kirillcha yoki ruscha yozing. Har bir raqamning qayerdan olingani ochiq.", { n: foodCount })}
             </p>
             <ul className="trust">
-              <li>Ro'yxatdan o'tmasdan</li>
-              <li>Manbasi ochiq raqamlar</li>
-              <li>Sushka va massa rejimlari</li>
+              <li>{tr("Ro'yxatdan o'tmasdan")}</li>
+              <li>{tr("Manbasi ochiq raqamlar")}</li>
+              <li>{tr("Sushka va massa rejimlari")}</li>
             </ul>
             <div className="hero-stats">
               <div>
                 <b>{foodCount}+</b>
-                <span>taom va masalliq</span>
+                <span>{tr("taom va masalliq")}</span>
               </div>
               <div>
                 <b>19</b>
-                <span>milliy retsept hisobi</span>
+                <span>{tr("milliy retsept hisobi")}</span>
               </div>
               <div>
-                <b>3</b>
-                <span>til: uz, ўз, ru</span>
+                <b>12</b>
+                <span>{tr("vitamin va mineral")}</span>
               </div>
             </div>
           </div>
-          <MealCalculator targets={targets} weightKg={profile?.weightKg ?? 70} myFoods={myFoods} />
+          <MealCalculator targets={targets} profile={profile} myFoods={myFoods} />
         </div>
       </section>
 
@@ -152,16 +156,15 @@ export default function Home({ foodCount }: { foodCount: number }) {
         <section className="block" id="bot">
           <div className="cta-band">
             <div>
-              <h3>Telegram botda ham xuddi shunday</h3>
+              <h3>{tr("Telegram botda ham xuddi shunday")}</h3>
               <p>
-                Botga "2 ta somsa va choy" deb yozing: kundalikka qo'shadi, kun oxirida hisobot beradi, suv va vaznni eslatadi. O'lchamlarni ham
-                yozasiz: "/olcham bo'yin 38 bel 85".
+                {tr('Botga "2 ta somsa va choy" deb yozing: kundalikka qo\'shadi, kun oxirida hisobot beradi, suv va vaznni eslatadi. O\'lchamlarni ham yozasiz: "/olcham bo\'yin 38 bel 85". Til: /til.')}
               </p>
             </div>
             {BOT_URL && (
               <a className="pill-link" href={BOT_URL} rel="noopener">
                 <Send />
-                Botni ochish
+                {tr("Botni ochish")}
               </a>
             )}
           </div>

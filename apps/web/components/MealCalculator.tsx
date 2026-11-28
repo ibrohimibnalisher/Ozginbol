@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Food, SizeKey, Targets } from "@ozginbol/core";
+import type { Food, Profile, SizeKey, Targets } from "@ozginbol/core";
 import { SIZE_LABELS, formatUnit, minutesToBurn, parseMeal, scaleMacros, searchFoods, sumMacros } from "@ozginbol/core";
 import FoodSource from "./FoodSource";
 import { Flame } from "./Icons";
 import { MacroBar, Ring } from "./Ring";
+import { useT } from "./i18n";
+import { MealMicros } from "./Micros";
 
 const EXAMPLES = [
   "2 ta somsa va 1 piyola choy",
@@ -18,7 +20,9 @@ const EXAMPLES = [
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
-export default function MealCalculator({ targets, weightKg, myFoods }: { targets: Targets | null; weightKg: number; myFoods: Food[] }) {
+export default function MealCalculator({ targets, profile, myFoods }: { targets: Targets | null; profile: Profile | null; myFoods: Food[] }) {
+  const { tr, lang } = useT();
+  const weightKg = profile?.weightKg ?? 70;
   const [text, setText] = useState("");
   // grams overrides keyed by item index + food id, so edits survive re-parsing
   const [grams, setGrams] = useState<Record<string, { g: number; size?: SizeKey }>>({});
@@ -41,19 +45,19 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
     <div className="card calc-card">
       <textarea
         className="meal"
-        placeholder="Masalan: 2 ta somsa, 1 kosa lag'mon va 1 piyola choy"
+        placeholder={tr("Masalan: 2 ta somsa, 1 kosa lag'mon va 1 piyola choy")}
         value={text}
         onChange={(e) => {
           setText(e.target.value);
           setGrams({});
         }}
-        aria-label="Yegan taomlaringiz"
+        aria-label={tr("Yegan taomlaringiz")}
       />
       {!text && (
         <div className="chips">
           {EXAMPLES.map((ex) => (
-            <button key={ex} className="chip" onClick={() => setText(ex)}>
-              {ex}
+            <button key={ex} className="chip" onClick={() => setText(tr(ex))}>
+              {tr(ex)}
             </button>
           ))}
         </div>
@@ -66,12 +70,12 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
               value={total.kcal}
               max={targets?.calories ?? null}
               label={String(total.kcal)}
-              sub={targets ? `/ ${targets.calories} kkal` : "kkal"}
+              sub={targets ? `/ ${targets.calories} ${tr("kkal")}` : tr("kkal")}
             />
             <div className="macros">
-              <MacroBar name="Oqsil" cls="c-p" value={total.protein} target={targets?.protein} />
-              <MacroBar name="Yog'" cls="c-f" value={total.fat} target={targets?.fat} />
-              <MacroBar name="Uglevod" cls="c-c" value={total.carbs} target={targets?.carbs} />
+              <MacroBar name={tr("Oqsil")} cls="c-p" value={total.protein} target={targets?.protein} />
+              <MacroBar name={tr("Yog'")} cls="c-f" value={total.fat} target={targets?.fat} />
+              <MacroBar name={tr("Uglevod")} cls="c-c" value={total.carbs} target={targets?.carbs} />
             </div>
           </div>
 
@@ -83,15 +87,15 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
               return (
                 <li className="item" key={it.k}>
                   <div className="avatar" aria-hidden="true">
-                    {it.food.name.uz.charAt(0)}
+                    {it.food.name[lang].charAt(0)}
                   </div>
                   <div>
-                    <div className="name">{it.food.name.uz}</div>
+                    <div className="name">{it.food.name[lang]}</div>
                     <div className="meta">
-                      {it.unit === "g" || it.unit === "ml" ? "" : `${formatUnit(it.unit, it.quantity)}${it.size ? ` (${SIZE_LABELS[it.size]})` : ""} · `}O {fmt(it.nutrition.protein)} · Y{" "}
-                      {fmt(it.nutrition.fat)} · U {fmt(it.nutrition.carbs)}
+                      {it.unit === "g" || it.unit === "ml" ? "" : `${formatUnit(it.unit, it.quantity, lang)}${it.size ? ` (${tr(SIZE_LABELS[it.size])})` : ""} · `}
+                      {tr("O")} {fmt(it.nutrition.protein)} · {tr("Y")} {fmt(it.nutrition.fat)} · {tr("U")} {fmt(it.nutrition.carbs)}
                     </div>
-                    {it.confidence < 0.9 && <div className="low-conf">"{it.input}" deb yozdingiz, {it.food.name.uz} deb tushundik</div>}
+                    {it.confidence < 0.9 && <div className="low-conf">{tr('"{input}" deb yozdingiz, {name} deb tushundik', { input: it.input, name: it.food.name[lang] })}</div>}
                     <div className="item-tools">
                       <label className="grams">
                         <input
@@ -100,16 +104,16 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
                           value={it.grams}
                           min={1}
                           onChange={(e) => setG(it.k, Number(e.target.value) || 1)}
-                          aria-label={`${it.food.name.uz}, gramm`}
+                          aria-label={`${it.food.name[lang]}, ${tr("gramm")}`}
                         />
                         {it.food.liquid ? "ml" : "g"}
                       </label>
                       {it.unit !== "g" && it.unit !== "ml" && (
                         <>
-                          <button className="mini" aria-label="Kamaytirish" onClick={() => setG(it.k, it.grams - unitG * 0.5)}>
+                          <button className="mini" aria-label={tr("Kamaytirish")} onClick={() => setG(it.k, it.grams - unitG * 0.5)}>
                             −
                           </button>
-                          <button className="mini" aria-label="Ko'paytirish" onClick={() => setG(it.k, it.grams + unitG * 0.5)}>
+                          <button className="mini" aria-label={tr("Ko'paytirish")} onClick={() => setG(it.k, it.grams + unitG * 0.5)}>
                             +
                           </button>
                         </>
@@ -122,18 +126,18 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
                             onClick={() => setG(it.k, sizes[s]! * count, s)}
                             title={`${sizes[s]} g`}
                           >
-                            {SIZE_LABELS[s]}
+                            {tr(SIZE_LABELS[s])}
                           </button>
                         ))}
                       <button className="link" onClick={() => setOpen(open === it.k ? null : it.k)}>
-                        {open === it.k ? "Yopish" : "Manba"}
+                        {open === it.k ? tr("Yopish") : tr("Manba")}
                       </button>
                     </div>
                     {open === it.k && <FoodSource food={it.food} />}
                   </div>
                   <div className="kcal">
                     {it.nutrition.kcal}
-                    <small>kkal</small>
+                    <small>{tr("kkal")}</small>
                   </div>
                 </li>
               );
@@ -143,10 +147,13 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
           {total.kcal > 0 && (
             <div className="burn">
               <Flame />
-              Shuncha kaloriyani yoqish uchun taxminan {minutesToBurn("walk", weightKg, total.kcal)} daqiqa piyoda yurish yoki{" "}
-              {minutesToBurn("run", weightKg, total.kcal)} daqiqa yugurish kerak.
+              {tr("Shuncha kaloriyani yoqish uchun taxminan {walk} daqiqa piyoda yurish yoki {run} daqiqa yugurish kerak.", {
+                walk: minutesToBurn("walk", weightKg, total.kcal),
+                run: minutesToBurn("run", weightKg, total.kcal),
+              })}
             </div>
           )}
+          <MealMicros items={items.map((i) => ({ foodId: i.food.id, grams: i.grams, kcal: i.nutrition.kcal }))} myFoods={myFoods} profile={profile} />
         </>
       )}
 
@@ -156,9 +163,9 @@ export default function MealCalculator({ targets, weightKg, myFoods }: { targets
             const sugg = searchFoods(u, 3, myFoods);
             return (
               <div key={u}>
-                <b>"{u}"</b> bazada topilmadi.
-                {sugg.length > 0 && <> Balki: {sugg.map((s) => s.name.uz).join(", ")}?</>}{" "}
-                <a href="#mening">O'zingiz qo'shing</a>
+                <b>"{u}"</b> {tr("bazada topilmadi.")}
+                {sugg.length > 0 && <> {tr("Balki")}: {sugg.map((s) => s.name[lang]).join(", ")}?</>}{" "}
+                <a href="#mening">{tr("O'zingiz qo'shing")}</a>
               </div>
             );
           })}

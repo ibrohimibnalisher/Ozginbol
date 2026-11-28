@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "./Icons";
+import { useT } from "./i18n";
 
 export default function ThemeToggle() {
+  const { tr } = useT();
   const [dark, setDark] = useState<boolean | null>(null);
   useEffect(() => {
     const set = document.documentElement.dataset.theme;
@@ -20,7 +22,7 @@ export default function ThemeToggle() {
     }
   };
   return (
-    <button className="icon-btn" onClick={toggle} aria-label={dark ? "Kunduzgi rejim" : "Tungi rejim"} title={dark ? "Kunduzgi rejim" : "Tungi rejim"}>
+    <button className="icon-btn" onClick={toggle} aria-label={dark ? tr("Kunduzgi rejim") : tr("Tungi rejim")} title={dark ? tr("Kunduzgi rejim") : tr("Tungi rejim")}>
       {dark ? <Sun /> : <Moon />}
     </button>
   );
